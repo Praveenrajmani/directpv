@@ -185,6 +185,9 @@ const (
 
 	// DirectCSIDriveConditionInitialized denotes "Initialized" drive condition.
 	DirectCSIDriveConditionInitialized DirectCSIDriveCondition = "Initialized"
+
+	// DirectCSIDriveConditionReady denotes "NotReady" drive condition.
+	DirectCSIDriveConditionReady DirectCSIDriveCondition = "Ready"
 )
 
 // DirectCSIDriveReason denotes drive reason.
@@ -199,6 +202,15 @@ const (
 
 	// DirectCSIDriveReasonInitialized denotes "Initialized" drive reason.
 	DirectCSIDriveReasonInitialized DirectCSIDriveReason = "Initialized"
+
+	// DirectCSIDriveReasonNotReady denotes "NotReady" drive reason.
+	DirectCSIDriveReasonNotReady DirectCSIDriveReason = "NotReady"
+
+	// DirectCSIDriveReasonReady denotes "Ready" drive reason.
+	DirectCSIDriveReasonReady DirectCSIDriveReason = "Ready"
+
+	// DirectCSIDriveReasonLost denotes "Lost" drive reason.
+	DirectCSIDriveReasonLost DirectCSIDriveReason = "Lost"
 )
 
 // DirectCSIDriveMessage denotes drive message.

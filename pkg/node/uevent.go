@@ -25,6 +25,7 @@ import (
 	"github.com/minio/directpv/pkg/uevent"
 	"github.com/minio/directpv/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 )
 
@@ -66,10 +67,39 @@ func (d *driveEventHandler) Add(ctx context.Context, device *sys.Device) error {
 	return nil
 }
 
-func (d *driveEventHandler) Change(ctx context.Context, device *sys.Device, drive *directcsi.DirectCSIDrive) error {
-	return nil
+func (d *driveEventHandler) Update(ctx context.Context, device *sys.Device, drive *directcsi.DirectCSIDrive) error {
+	var errMessage string
+	updatedDrive, err := d.updateDrive(device, drive)
+	if err != nil {
+		errMessage = err.Error()
+	}
+	if drive.Status.Path != updatedDrive.Status.Path {
+		if err := syncVolumeLabels(ctx, updatedDrive); err != nil {
+			return err
+		}
+	}
+	utils.UpdateCondition(updatedDrive.Status.Conditions,
+		string(directcsi.DirectCSIDriveConditionReady),
+		utils.BoolToCondition(errMessage == ""),
+		func() string {
+			if errMessage == "" {
+				return string(directcsi.DirectCSIDriveReasonReady)
+			} else {
+				return string(directcsi.DirectCSIDriveReasonNotReady)
+			}
+		}(),
+		errMessage)
+
+	_, err = client.GetLatestDirectCSIDriveInterface().Update(ctx, updatedDrive, metav1.UpdateOptions{})
+	return err
 }
 
-func (d *driveEventHandler) Remove(ctx context.Context, device *sys.Device, drive *directcsi.DirectCSIDrive) error {
-	return nil
+func (d *driveEventHandler) Remove(ctx context.Context, drive *directcsi.DirectCSIDrive) error {
+	utils.UpdateCondition(drive.Status.Conditions,
+		string(directcsi.DirectCSIDriveConditionReady),
+		metav1.ConditionFalse,
+		string(directcsi.DirectCSIDriveReasonLost),
+		"drive is removed")
+	_, err := client.GetLatestDirectCSIDriveInterface().Update(ctx, drive, metav1.UpdateOptions{})
+	return err
 }
