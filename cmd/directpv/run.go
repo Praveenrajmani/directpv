@@ -21,10 +21,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
-	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -35,7 +33,6 @@ import (
 	id "github.com/minio/directpv/pkg/identity"
 	"github.com/minio/directpv/pkg/mount"
 	"github.com/minio/directpv/pkg/node"
-	"github.com/minio/directpv/pkg/node/discovery"
 	"github.com/minio/directpv/pkg/sys"
 	"github.com/minio/directpv/pkg/utils/grpc"
 	"github.com/minio/directpv/pkg/volume"
@@ -53,6 +50,7 @@ const (
 
 var (
 	errInvalidConversionHealthzURL = errors.New("the `--conversion-webhook-healthz-url` flag is unset/empty")
+	errMountFailure                = errors.New("could not mount the drive")
 )
 
 func waitForConversionWebhook() error {
@@ -102,31 +100,32 @@ func waitForConversionWebhook() error {
 	return nil
 }
 
-func checkXFS(ctx context.Context) (bool, error) {
+func checkXFS(ctx context.Context, reflinkSupport bool) error {
 	mountPoint, err := os.MkdirTemp("", "xfs.check.mnt.")
 	if err != nil {
-		return false, err
+		return err
 	}
 	defer os.Remove(mountPoint)
 
 	file, err := os.CreateTemp("", "xfs.check.file.")
 	if err != nil {
-		return false, err
+		return err
 	}
 	defer os.Remove(file.Name())
 	file.Close()
 
 	if err = os.Truncate(file.Name(), sys.MinSupportedDeviceSize); err != nil {
-		return false, err
+		return err
 	}
 
-	if err = xfs.MakeFS(ctx, file.Name(), uuid.New().String(), false, true); err != nil {
-		return false, err
+	if err = xfs.MakeFS(ctx, file.Name(), uuid.New().String(), false, reflinkSupport); err != nil {
+		klog.V(3).ErrorS(err, "failed to format", "reflink", reflinkSupport)
+		return err
 	}
 
 	loopDevice, err := losetup.Attach(file.Name(), 0, false)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	defer func() {
@@ -136,13 +135,11 @@ func checkXFS(ctx context.Context) (bool, error) {
 	}()
 
 	if err = mount.Mount(loopDevice.Path(), mountPoint, "xfs", nil, ""); err != nil {
-		if errors.Is(err, syscall.EINVAL) {
-			err = nil
-		}
-		return false, err
+		klog.V(3).ErrorS(err, "failed to mount", "reflink", reflinkSupport)
+		return errMountFailure
 	}
 
-	return true, mount.Unmount(mountPoint, true, true, false)
+	return mount.Unmount(mountPoint, true, true, false)
 }
 
 func run(ctxMain context.Context, args []string) error {
@@ -173,23 +170,22 @@ func run(ctxMain context.Context, args []string) error {
 
 	var nodeSrv csi.NodeServer
 	if driver {
-		reflinkSupport, err := checkXFS(ctx)
-		if err != nil {
-			return err
-		}
 
-		if !dynamicDriveDiscovery {
-			//klog.V(3).Infof("Enable dynamic drive change management using '--dynamic-drive-discovery' flag")
-			//klog.V(3).Infof("This flag will be made default in the next major release version")
-
-			discovery, err := discovery.NewDiscovery(ctx, identity, nodeID, rack, zone, region)
-			if err != nil {
+		var reflinkSupport bool
+		// try with reflink enabled
+		if err := checkXFS(ctx, true); err == nil {
+			reflinkSupport = true
+			klog.V(3).Infof("enabled reflink while formatting")
+		} else {
+			if !errors.Is(err, errMountFailure) {
 				return err
 			}
-			if err := discovery.Init(ctx, loopbackOnly); err != nil {
-				return fmt.Errorf("error while initializing drive discovery: %v", err)
+			// try with reflink disabled
+			if err := checkXFS(ctx, false); err != nil {
+				return err
 			}
-			klog.V(3).Infof("Drive discovery finished")
+			reflinkSupport = false
+			klog.V(3).Infof("disabled reflink while formatting")
 		}
 
 		go func() {

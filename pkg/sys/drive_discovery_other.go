@@ -27,10 +27,6 @@ func getDeviceMajorMinor(device string) (major, minor uint32, err error) {
 	return 0, 0, fmt.Errorf("unsupported operating system %v", runtime.GOOS)
 }
 
-func probeDevices() (devices map[string]*Device, err error) {
-	return nil, fmt.Errorf("unsupported operating system %v", runtime.GOOS)
-}
-
 func getDeviceName(major, minor uint32) (string, error) {
 	return "", fmt.Errorf("unsupported operating system %v", runtime.GOOS)
 }

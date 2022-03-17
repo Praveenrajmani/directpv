@@ -47,6 +47,7 @@ type Device struct {
 	Removable bool
 	ReadOnly  bool
 	Virtual   bool
+	Hidden    bool
 
 	// Populated from /run/udev/data/b<Major>:<Minor>
 	Size      uint64

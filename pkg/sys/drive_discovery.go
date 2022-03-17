@@ -21,11 +21,6 @@ func GetMajorMinor(device string) (major, minor uint32, err error) {
 	return getDeviceMajorMinor(device)
 }
 
-// ProbeDevices probes all devices.
-func ProbeDevices() (devices map[string]*Device, err error) {
-	return probeDevices()
-}
-
 // GetDeviceName returns device name of given major/minor number.
 func GetDeviceName(major, minor uint32) (string, error) {
 	return getDeviceName(major, minor)
