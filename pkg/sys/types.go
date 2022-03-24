@@ -89,7 +89,7 @@ type Device struct {
 	MountPoints       []string // Deprecating in favour of MountInfos
 	FirstMountPoint   string
 	FirstMountOptions []string
-	MountInfos        []mount.MountInfo
+	OtherMountsInfo   []mount.MountInfo
 }
 
 func (d Device) DevPath() string {

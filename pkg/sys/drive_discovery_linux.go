@@ -393,6 +393,29 @@ func (device *Device) ProbeDevInfo() (err error) {
 	return nil
 }
 
+func (device *Device) ProbeMountInfo() (err error) {
+	mountInfosAll, err := mount.Probe()
+	if err != nil {
+		return err
+	}
+	majorMinor := mount.MajorMinor(device.Major, device.Minor)
+
+	mountInfos, ok := mountInfosAll[majorMinor]
+	if !ok {
+		// not mounted
+		return nil
+	}
+	for i, mountInfo := range mountInfos {
+		if i == 0 {
+			device.FirstMountPoint = mountInfo.MountPoint
+			device.FirstMountOptions = mountInfo.MountOptions
+		} else {
+			device.OtherMountsInfo = append(device.OtherMountsInfo, mountInfo)
+		}
+	}
+	return nil
+}
+
 func getDeviceName(major, minor uint32) (string, error) {
 	filename := fmt.Sprintf("/sys/dev/block/%v:%v/uevent", major, minor)
 	file, err := os.Open(filename)

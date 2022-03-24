@@ -44,18 +44,17 @@ func getRootBlockPath(devName string) string {
 }
 
 func ValidateMountInfo(device *sys.Device, directCSIDrive *directcsi.DirectCSIDrive) bool {
-	if len(device.MountInfos) > 0 {
-		if directCSIDrive.Status.Mountpoint != device.MountInfos[0].MountPoint {
-			return false
-		}
-		deviceMountOptions := device.MountInfos[0].MountOptions
-		sort.Strings(deviceMountOptions)
-		driveMountOptions := directCSIDrive.Status.MountOptions
-		sort.Strings(driveMountOptions)
-		if !reflect.DeepEqual(deviceMountOptions, driveMountOptions) {
-			return false
-		}
-
+	// check primary mount
+	if device.FirstMountPoint != directCSIDrive.Status.Mountpoint {
+		return false
+	}
+	// check primary mountoptions
+	deviceMountOptions := device.FirstMountOptions
+	sort.Strings(deviceMountOptions)
+	driveMountOptions := directCSIDrive.Status.MountOptions
+	sort.Strings(driveMountOptions)
+	if !reflect.DeepEqual(deviceMountOptions, driveMountOptions) {
+		return false
 	}
 	return true
 }

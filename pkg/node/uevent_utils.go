@@ -61,8 +61,7 @@ func (d *driveEventHandler) setDriveStatus(device *sys.Device, drive *directcsi.
 	updatedDrive.Status.MinorNumber = uint32(device.Minor)
 	updatedDrive.Status.Path = device.DevPath()
 	updatedDrive.Status.LogicalBlockSize = int64(device.LogicalBlockSize)
-	updatedDrive.Status.MountOptions = device.FirstMountOptions
-	updatedDrive.Status.Mountpoint = device.FirstMountPoint
+
 	updatedDrive.Status.DMName = device.DMName
 	updatedDrive.Status.ReadOnly = device.ReadOnly
 	updatedDrive.Status.RootPartition = device.Name
@@ -72,6 +71,19 @@ func (d *driveEventHandler) setDriveStatus(device *sys.Device, drive *directcsi.
 	updatedDrive.Status.PartTableUUID = device.PTUUID
 	updatedDrive.Status.PartTableType = device.PTType
 	updatedDrive.Status.Partitioned = device.Partitioned
+
+	// populate mount infos
+	updatedDrive.Status.MountOptions = device.FirstMountOptions
+	updatedDrive.Status.Mountpoint = device.FirstMountPoint
+	// other mounts
+	var otherMountsInfo []directcsi.OtherMountsInfo
+	for _, mountInfo := range device.OtherMountsInfo {
+		otherMountsInfo = append(otherMountsInfo, directcsi.OtherMountsInfo{
+			Mountpoint:   mountInfo.MountPoint,
+			MountOptions: mountInfo.MountOptions,
+		})
+	}
+	updatedDrive.Status.OtherMountsInfo = otherMountsInfo
 
 	// fill hwinfo only if it is empty
 	if updatedDrive.Status.PartitionUUID == "" {
