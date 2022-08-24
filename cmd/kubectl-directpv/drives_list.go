@@ -34,6 +34,8 @@ import (
 
 	"k8s.io/klog/v2"
 )
+ 
+var fsuuid string
 
 var listDrivesCmd = &cobra.Command{
 	Use:   "list",
@@ -89,6 +91,7 @@ func init() {
 	listDrivesCmd.PersistentFlags().StringSliceVarP(&status, "status", "s", status, fmt.Sprintf("match based on drive status [%s]", strings.Join(directcsi.SupportedStatusSelectorValues(), ", ")))
 	listDrivesCmd.PersistentFlags().BoolVarP(&all, "all", "a", all, "list all drives (including unavailable)")
 	listDrivesCmd.PersistentFlags().StringSliceVarP(&accessTiers, "access-tier", "", accessTiers, "match based on access-tier")
+	listDrivesCmd.PersistentFlags().StringVarP(&fsuuid, "fsuuid", "", fsuuid, "list by fsuuid")
 }
 
 func getModel(drive directcsi.DirectCSIDrive) string {
@@ -127,6 +130,9 @@ func listDrives(ctx context.Context, args []string) error {
 	filteredDrives, err := getFilteredDriveList(
 		ctx,
 		func(drive directcsi.DirectCSIDrive) bool {
+			if fsuuid != "" {
+				return drive.Status.FilesystemUUID == fsuuid
+			}
 			if len(driveStatusList) > 0 {
 				return drive.MatchDriveStatus(driveStatusList)
 			}

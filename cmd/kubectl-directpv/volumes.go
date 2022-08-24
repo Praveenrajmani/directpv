@@ -62,4 +62,5 @@ func validateVolumeSelectors() (err error) {
 
 func init() {
 	volumesCmd.AddCommand(listVolumesCmd)
+	volumesCmd.AddCommand(checkVolumesCmd)
 }
