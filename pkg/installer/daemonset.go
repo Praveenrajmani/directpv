@@ -219,6 +219,36 @@ func doCreateDaemonset(ctx context.Context, args *Args) error {
 				},*/
 			},
 			{
+				Name:  consts.NodeControllerName,
+				Image: args.getContainerImage(),
+				Args: func() []string {
+					args := []string{
+						consts.NodeControllerName,
+						fmt.Sprintf("-v=%d", logLevel),
+						fmt.Sprintf("--kube-node-name=$(%s)", kubeNodeNameEnvVarName),
+					}
+					return args
+				}(),
+				SecurityContext:          securityContext,
+				Env:                      []corev1.EnvVar{kubeNodeNameEnvVar},
+				TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+				TerminationMessagePath:   "/var/log/driver-termination-log",
+				VolumeMounts:             volumeMounts,
+				/*ReadinessProbe: &corev1.Probe{ProbeHandler: readinessHandler},
+				LivenessProbe: &corev1.Probe{
+					FailureThreshold:    5,
+					InitialDelaySeconds: 300,
+					TimeoutSeconds:      5,
+					PeriodSeconds:       5,
+					ProbeHandler: corev1.ProbeHandler{
+						HTTPGet: &corev1.HTTPGetAction{
+							Path: healthZContainerPortPath,
+							Port: intstr.FromString(healthZContainerPortName),
+						},
+					},
+				},*/
+			},
+			{
 				Name:  "liveness-probe",
 				Image: args.getLivenessProbeImage(),
 				Args: []string{
