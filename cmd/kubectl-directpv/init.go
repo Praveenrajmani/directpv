@@ -19,16 +19,20 @@ package main
 import (
 	"context"
 	"errors"
-	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
+	"github.com/google/uuid"
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/minio/directpv/pkg/admin"
+	directpvtypes "github.com/minio/directpv/pkg/apis/directpv.min.io/types"
+	"github.com/minio/directpv/pkg/client"
 	"github.com/minio/directpv/pkg/consts"
+	"github.com/minio/directpv/pkg/types"
 	"github.com/minio/directpv/pkg/utils"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var errInitFailed = errors.New("init failed")
@@ -74,45 +78,45 @@ func init() {
 	addAdminServerFlag(initCmd)
 }
 
-func toInitDevicesRequest(config *InitConfig) admin.InitDevicesRequest {
-	nodes := map[string][]admin.InitDevice{}
+func toInitRequest(config *InitConfig) types.InitRequest {
+	request := map[directpvtypes.NodeID][]types.InitDevice{}
 	for _, node := range config.Nodes {
-		initDevices := []admin.InitDevice{}
+		initDevices := []types.InitDevice{}
 		for _, device := range node.Drives {
-			initDevices = append(initDevices, admin.InitDevice{
+			initDevices = append(initDevices, types.InitDevice{
+				ID:         device.ID,
 				Name:       device.Name,
 				MajorMinor: device.MajorMinor,
 				Force:      device.FS != "",
-				ID:         device.ID,
 			})
 		}
 		if len(initDevices) > 0 {
-			nodes[node.Name] = initDevices
+			request[node.Name] = initDevices
 		}
 	}
-	return admin.InitDevicesRequest{
-		Nodes: nodes,
+
+	return types.InitRequest{
+		TypeMeta:   types.NewInitRequestTypeMeta(),
+		ObjectMeta: metav1.ObjectMeta{Name: uuid.NewString()},
+		Status:     types.InitRequestStatus{Request: request},
 	}
 }
 
-func initDevices(ctx context.Context, client *admin.Client, req admin.InitDevicesRequest) error {
-	if len(req.Nodes) == 0 {
+func initDevices(ctx context.Context, req types.InitRequest) error {
+	if len(req.Status.Request) == 0 {
 		utils.Eprintf(false, false, "%v\n", color.HiYellowString("No drives are available to init"))
 		return errInitFailed
 	}
 
-	cred, err := admin.GetCredential(ctx, getCredFile())
-	if err != nil {
+	if _, err := client.InitRequestClient().Create(ctx, &req, metav1.CreateOptions{}); err != nil {
 		return err
 	}
 
-	resp, err := client.InitDevices(&req, cred)
+	// FIXME: watch newReq changes and show results.
+	time.Sleep(1 * time.Minute)
+	updated, err := client.InitRequestClient().Get(ctx, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
-	}
-
-	if resp.Error != "" {
-		return errors.New(resp.Error)
 	}
 
 	writer := newTableWriter(
@@ -139,9 +143,10 @@ func initDevices(ctx context.Context, client *admin.Client, req admin.InitDevice
 	)
 
 	errs := map[string]string{}
-	for node, result := range resp.Nodes {
+	for node, result := range updated.Spec.Response {
+		// FIXME: use result.Completed which denotes whether specified node processed the request or not.
 		if result.Error != "" {
-			errs[node] = result.Error
+			errs[string(node)] = result.Error
 			continue
 		}
 
@@ -189,13 +194,7 @@ func initMain(ctx context.Context, inputFile string) {
 		utils.Eprintf(quietFlag, true, "unable to read the input file; %v", err.Error())
 		os.Exit(1)
 	}
-	client := admin.NewClient(
-		&url.URL{
-			Scheme: "https",
-			Host:   adminServerArg,
-		},
-	)
-	err = initDevices(ctx, client, toInitDevicesRequest(initConfig))
+	err = initDevices(ctx, toInitRequest(initConfig))
 	if err != nil {
 		if !errors.Is(err, errInitFailed) {
 			utils.Eprintf(quietFlag, true, "%v\n", err)

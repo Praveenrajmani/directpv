@@ -60,7 +60,7 @@ const (
 
 	// InitRequestKind denotes the InitRequest CRD kind.
 	InitRequestKind = AppPrettyName + "InitRequest"
-
+	
 	// DriveResource is drive CRD resource.
 	DriveResource = AppName + "drives"
 
@@ -99,15 +99,4 @@ const (
 	NodeServerName       = "node-server"
 	ControllerServerName = "controller"
 	NodeControllerName   = "node-controller"
-
-	NodeAPIServerName      = "node-api-server"
-	NodeAPIPortName        = "node-api-port"
-	NodeAPIPort            = 50443
-	NodeAPIServerCertsPath = "/tmp/nodeapiserver/certs"
-	NodeAPIServerHLSVC     = NodeAPIServerName + "-hl"
-
-	AdminServerName      = "admin-server"
-	AdminServerPortName  = "admin-server-port"
-	AdminServerPort      = 40443
-	AdminServerCertsPath = "/tmp/adminserver/certs"
 )

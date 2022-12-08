@@ -1,5 +1,5 @@
 // This file is part of MinIO DirectPV
-// Copyright (c) 2021, 2022 MinIO, Inc.
+// Copyright (c) 2022 MinIO, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -18,12 +18,16 @@ package initrequest
 
 import (
 	"context"
+	"fmt"
 
 	directpvtypes "github.com/minio/directpv/pkg/apis/directpv.min.io/types"
 	"github.com/minio/directpv/pkg/client"
 	"github.com/minio/directpv/pkg/k8s"
 	"github.com/minio/directpv/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 // ListInitRequestResult denotes list of initrequest result.
@@ -71,10 +75,9 @@ func (lister *Lister) IgnoreNotFound(b bool) *Lister {
 	return lister
 }
 
-// List returns channel to loop through initrequest items.
+// List returns channel to loop through init request items.
 func (lister *Lister) List(ctx context.Context) <-chan ListInitRequestResult {
-	getOnly := len(lister.nodes) == 0 &&
-		len(lister.initRequestNames) != 0
+	getOnly := len(lister.nodes) == 0 && len(lister.initRequestNames) != 0
 
 	labelMap := map[directpvtypes.LabelKey][]directpvtypes.LabelValue{
 		directpvtypes.NodeLabelKey: lister.nodes,
@@ -149,7 +152,7 @@ func (lister *Lister) List(ctx context.Context) <-chan ListInitRequestResult {
 	return resultCh
 }
 
-// Get returns list of initrequest.
+// Get returns list of init request.
 func (lister *Lister) Get(ctx context.Context) ([]types.InitRequest, error) {
 	ctx, cancelFunc := context.WithCancel(ctx)
 	defer cancelFunc()
@@ -163,4 +166,49 @@ func (lister *Lister) Get(ctx context.Context) ([]types.InitRequest, error) {
 	}
 
 	return initRequestList, nil
+}
+
+// WatchEvent represents the node events.
+type WatchEvent struct {
+	Type        watch.EventType
+	InitRequest *types.InitRequest
+	Err         error
+}
+
+// Watch looks for changes in init request and reports them.
+func (lister *Lister) Watch(ctx context.Context) (<-chan WatchEvent, func(), error) {
+	labelMap := map[directpvtypes.LabelKey][]directpvtypes.LabelValue{
+		directpvtypes.NodeLabelKey: lister.nodes,
+	}
+	watcher, err := client.NodeClient().Watch(ctx, metav1.ListOptions{
+		LabelSelector: directpvtypes.ToLabelSelector(labelMap),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	watchCh := make(chan WatchEvent)
+	go func() {
+		defer close(watchCh)
+		for result := range watcher.ResultChan() {
+			unstructured := result.Object.(*unstructured.Unstructured)
+			initRequest := &types.InitRequest{}
+			err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructured.Object, initRequest)
+			if err != nil {
+				err = fmt.Errorf("unable to convert unstructured object %s; %w", unstructured.GetName(), err)
+				initRequest = nil
+			}
+			watchCh <- WatchEvent{
+				Type:        result.Type,
+				InitRequest: initRequest,
+				Err:         err,
+			}
+
+			if err != nil {
+				break
+			}
+		}
+	}()
+
+	return watchCh, watcher.Stop, nil
 }

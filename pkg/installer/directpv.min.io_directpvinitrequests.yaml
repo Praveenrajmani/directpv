@@ -33,53 +33,61 @@ spec:
           metadata:
             type: object
           spec:
-            description: InitRequestSpec represents the spec for InitRequest.
+            description: InitRequestSpec represents init request specification.
             properties:
-              devices:
-                items:
-                  description: InitDevice represents the device requested for initialization.
+              response:
+                additionalProperties:
+                  description: InitResult represents result of init device request.
                   properties:
-                    force:
+                    completed:
                       type: boolean
-                    id:
-                      type: string
-                    majorMinor:
-                      type: string
-                    name:
-                      type: string
-                  required:
-                  - force
-                  - id
-                  - majorMinor
-                  - name
-                  type: object
-                type: array
-                x-kubernetes-list-type: atomic
-            required:
-            - devices
-            type: object
-          status:
-            description: InitRequestStatus represents the status of the InitRequest.
-            properties:
-              results:
-                items:
-                  description: InitDeviceResult represents the result of the InitDeviceRequest.
-                  properties:
+                    devices:
+                      items:
+                        description: InitDeviceResult represents init device result.
+                        properties:
+                          error:
+                            type: string
+                          name:
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      type: array
+                      x-kubernetes-list-type: atomic
                     error:
                       type: string
-                    name:
-                      type: string
                   required:
-                  - name
+                  - completed
+                  - devices
                   type: object
-                type: array
-                x-kubernetes-list-type: atomic
-              status:
-                description: InitStatus denotes initialization status
-                type: string
+                type: object
+            type: object
+          status:
+            description: InitRequestStatus represents status of InitRequest.
+            properties:
+              request:
+                additionalProperties:
+                  items:
+                    description: InitDevice represents device requested for initialization.
+                    properties:
+                      force:
+                        type: boolean
+                      id:
+                        type: string
+                      majorMinor:
+                        type: string
+                      name:
+                        type: string
+                    required:
+                    - force
+                    - id
+                    - majorMinor
+                    - name
+                    type: object
+                  type: array
+                type: object
             required:
-            - results
-            - status
+            - request
             type: object
         required:
         - metadata

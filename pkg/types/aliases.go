@@ -48,11 +48,14 @@ type (
 
 	NodeStatus          = directpv.NodeStatus
 	Node                = directpv.DirectPVNode
-	Device              = directpv.DirectPVDevice
+	Device              = directpv.Device
 	NodeStatusList      = []directpv.DirectPVNode
 	NodeList            = directpv.DirectPVNodeList
 	LatestNodeInterface = typeddirectpv.DirectPVNodeInterface
 
+	InitDeviceResult           = directpv.InitDeviceResult
+	InitResult                 = directpv.InitResult
+	InitDevice                 = directpv.InitDevice
 	InitRequestStatus          = directpv.InitRequestStatus
 	InitRequest                = directpv.DirectPVInitRequest
 	InitRequestStatusList      = []directpv.DirectPVInitRequest

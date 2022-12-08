@@ -32,7 +32,7 @@ var nodeControllerCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(c *cobra.Command, args []string) error {
-		if err := node.Sync(c.Context(), nodeID, true); err != nil {
+		if err := node.Sync(c.Context(), nodeID); err != nil {
 			return err
 		}
 		return startNodeController(c.Context(), args)
@@ -54,7 +54,7 @@ func startNodeController(ctx context.Context, args []string) error {
 	}()
 
 	go func() {
-		if err := initrequest.StartController(ctx, nodeID); err != nil {
+		if err := initrequest.StartController(ctx, nodeID, identity, rack, zone, region); err != nil {
 			klog.ErrorS(err, "unable to start initrequest controller")
 			errCh <- err
 		}

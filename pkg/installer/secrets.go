@@ -88,13 +88,3 @@ func deleteSecret(ctx context.Context, name string) error {
 	}
 	return err
 }
-
-func createAdminSecrets(ctx context.Context, args *Args) error {
-	return createOrUpdateSecret(
-		ctx, args, consts.CredentialsSecretName, args.credential.ToSecretData(),
-	)
-}
-
-func deleteAdminSecrets(ctx context.Context) error {
-	return deleteSecret(ctx, consts.CredentialsSecretName)
-}

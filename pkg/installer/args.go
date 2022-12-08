@@ -21,7 +21,6 @@ import (
 	"io"
 	"path"
 
-	"github.com/minio/directpv/pkg/admin"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/version"
 )
@@ -35,21 +34,19 @@ const (
 // Args represents DirectPV installation arguments.
 type Args struct {
 	image       string
-	credential  *admin.Credential
 	auditWriter io.Writer
 
 	// Optional arguments
-	Registry            string
-	Org                 string
-	ImagePullSecrets    []string
-	NodeSelector        map[string]string
-	Tolerations         []corev1.Toleration
-	SeccompProfile      string
-	AppArmorProfile     string
-	DryRun              bool
-	Quiet               bool
-	DisableAdminService bool
-	KubeVersion         *version.Version
+	Registry         string
+	Org              string
+	ImagePullSecrets []string
+	NodeSelector     map[string]string
+	Tolerations      []corev1.Toleration
+	SeccompProfile   string
+	AppArmorProfile  string
+	DryRun           bool
+	Quiet            bool
+	KubeVersion      *version.Version
 
 	podSecurityAdmission     bool
 	csiProvisionerImage      string
@@ -58,10 +55,9 @@ type Args struct {
 }
 
 // NewArgs creates arguments for DirectPV installation.
-func NewArgs(image string, credential *admin.Credential, auditWriter io.Writer) (*Args, error) {
+func NewArgs(image string, auditWriter io.Writer) (*Args, error) {
 	args := &Args{
 		image:       image,
-		credential:  credential,
 		auditWriter: auditWriter,
 
 		Registry: "quay.io",
@@ -81,10 +77,6 @@ func NewArgs(image string, credential *admin.Credential, auditWriter io.Writer) 
 func (args *Args) validate() error {
 	if args.image == "" {
 		return errors.New("image name must be provided")
-	}
-
-	if args.credential == nil {
-		return errors.New("credential must be provided")
 	}
 
 	if args.auditWriter == nil {

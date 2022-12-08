@@ -31,59 +31,20 @@ import (
 )
 
 const (
-	nodeAPIServerCertsSecretName = "nodeapiservercerts"
-	nodeAPIServerCASecretName    = "nodeapiservercacert"
-	volumeNameMountpointDir      = "mountpoint-dir"
-	volumeNameRegistrationDir    = "registration-dir"
-	volumeNamePluginDir          = "plugins-dir"
-	volumeNameAppRootDir         = consts.AppName + "-common-root"
-	appRootDir                   = consts.AppRootDir + "/"
-	volumeNameSysDir             = "sysfs"
-	volumeNameDevDir             = "devfs"
-	volumePathDevDir             = "/dev"
-	volumeNameRunUdevData        = "run-udev-data-dir"
-	volumePathRunUdevData        = consts.UdevDataDir
-	socketFile                   = "/csi.sock"
-	nodeAPIServerCertsDir        = "node-api-server-certs"
+	volumeNameMountpointDir   = "mountpoint-dir"
+	volumeNameRegistrationDir = "registration-dir"
+	volumeNamePluginDir       = "plugins-dir"
+	volumeNameAppRootDir      = consts.AppName + "-common-root"
+	appRootDir                = consts.AppRootDir + "/"
+	volumeNameSysDir          = "sysfs"
+	volumeNameDevDir          = "devfs"
+	volumePathDevDir          = "/dev"
+	volumeNameRunUdevData     = "run-udev-data-dir"
+	volumePathRunUdevData     = consts.UdevDataDir
+	socketFile                = "/csi.sock"
 )
 
-func createOrUpdateNodeAPIServerSecrets(ctx context.Context, args *Args) error {
-	caCertBytes, publicCertBytes, privateKeyBytes, err := getCerts(
-		localhost,
-		// FIXME: Add clusterIP service domain name here
-	)
-	if err != nil {
-		return err
-	}
-
-	err = createOrUpdateSecret(
-		ctx,
-		args,
-		nodeAPIServerCertsSecretName,
-		map[string][]byte{
-			consts.PrivateKeyFileName: privateKeyBytes,
-			consts.PublicCertFileName: publicCertBytes,
-		},
-	)
-	if err != nil {
-		return err
-	}
-
-	return createOrUpdateSecret(
-		ctx,
-		args,
-		nodeAPIServerCASecretName,
-		map[string][]byte{
-			caCertFileName: caCertBytes,
-		},
-	)
-}
-
 func doCreateDaemonset(ctx context.Context, args *Args) error {
-	if err := createOrUpdateNodeAPIServerSecrets(ctx, args); err != nil {
-		return err
-	}
-
 	privileged := true
 	securityContext := &corev1.SecurityContext{Privileged: &privileged}
 
@@ -103,7 +64,6 @@ func doCreateDaemonset(ctx context.Context, args *Args) error {
 		newHostPathVolume(volumeNameSysDir, volumePathSysDir),
 		newHostPathVolume(volumeNameDevDir, volumePathDevDir),
 		newHostPathVolume(volumeNameRunUdevData, volumePathRunUdevData),
-		newSecretVolume(nodeAPIServerCertsDir, nodeAPIServerCertsSecretName), // node api server
 	}
 	volumeMounts := []corev1.VolumeMount{
 		newVolumeMount(volumeNameSocketDir, socketDir, corev1.MountPropagationNone, false),
@@ -179,44 +139,6 @@ func doCreateDaemonset(ctx context.Context, args *Args) error {
 						},
 					},
 				},
-			},
-			{
-				Name:  consts.NodeAPIServerName,
-				Image: args.getContainerImage(),
-				Args: func() []string {
-					args := []string{
-						consts.NodeAPIServerName,
-						fmt.Sprintf("-v=%d", logLevel),
-						fmt.Sprintf("--kube-node-name=$(%s)", kubeNodeNameEnvVarName),
-						fmt.Sprintf("--port=%d", consts.NodeAPIPort),
-					}
-					return args
-				}(),
-				SecurityContext:          securityContext,
-				Env:                      []corev1.EnvVar{kubeNodeNameEnvVar},
-				TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
-				TerminationMessagePath:   "/var/log/driver-termination-log",
-				VolumeMounts:             append(volumeMounts, newVolumeMount(nodeAPIServerCertsDir, consts.NodeAPIServerCertsPath, corev1.MountPropagationNone, false)),
-				Ports: []corev1.ContainerPort{
-					{
-						ContainerPort: consts.NodeAPIPort,
-						Name:          consts.NodeAPIPortName,
-						Protocol:      corev1.ProtocolTCP,
-					},
-				},
-				/*ReadinessProbe: &corev1.Probe{ProbeHandler: readinessHandler},
-				LivenessProbe: &corev1.Probe{
-					FailureThreshold:    5,
-					InitialDelaySeconds: 300,
-					TimeoutSeconds:      5,
-					PeriodSeconds:       5,
-					ProbeHandler: corev1.ProbeHandler{
-						HTTPGet: &corev1.HTTPGetAction{
-							Path: healthZContainerPortPath,
-							Port: intstr.FromString(healthZContainerPortName),
-						},
-					},
-				},*/
 			},
 			{
 				Name:  consts.NodeControllerName,
@@ -348,14 +270,5 @@ func deleteDaemonset(ctx context.Context) error {
 		return err
 	}
 
-	err = k8s.KubeClient().CoreV1().Secrets(consts.Identity).Delete(ctx, nodeAPIServerCertsSecretName, metav1.DeleteOptions{})
-	if err != nil && !apierrors.IsNotFound(err) {
-		return err
-	}
-
-	err = k8s.KubeClient().CoreV1().Secrets(consts.Identity).Delete(ctx, nodeAPIServerCASecretName, metav1.DeleteOptions{})
-	if err != nil && !apierrors.IsNotFound(err) {
-		return err
-	}
 	return nil
 }

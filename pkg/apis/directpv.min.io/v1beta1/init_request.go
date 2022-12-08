@@ -21,15 +21,36 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// InitDeviceResult represents init device result.
+type InitDeviceResult struct {
+	Name  string `json:"name"`
+	Error string `json:"error,omitempty"`
+}
 
-// DirectPVInitRequestList denotes list of init request.
-type DirectPVInitRequestList struct {
-	metav1.TypeMeta `json:",inline"`
-	// metdata is the standard list metadata.
-	// +optional
-	metav1.ListMeta `json:"metadata"`
-	Items           []DirectPVInitRequest `json:"items"`
+// InitResult represents result of init device request.
+type InitResult struct {
+	Completed bool   `json:"completed"`
+	Error     string `json:"error,omitempty"`
+	// +listType=atomic
+	Devices []InitDeviceResult `json:"devices"`
+}
+
+// InitRequestSpec represents init request specification.
+type InitRequestSpec struct {
+	Response map[types.NodeID]InitResult `json:"response,omitempty"`
+}
+
+// InitDevice represents device requested for initialization.
+type InitDevice struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	MajorMinor string `json:"majorMinor"`
+	Force      bool   `json:"force"`
+}
+
+// InitRequestStatus represents status of InitRequest.
+type InitRequestStatus struct {
+	Request map[types.NodeID][]InitDevice `json:"request"`
 }
 
 // +genclient
@@ -48,29 +69,13 @@ type DirectPVInitRequest struct {
 	Status InitRequestStatus `json:"status"`
 }
 
-// InitRequestSpec represents the spec for InitRequest.
-type InitRequestSpec struct {
-	// +listType=atomic
-	Devices []InitDevice `json:"devices"`
-}
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// InitDevice represents the device requested for initialization.
-type InitDevice struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	MajorMinor string `json:"majorMinor"`
-	Force      bool   `json:"force"`
-}
-
-// InitRequestStatus represents the status of the InitRequest.
-type InitRequestStatus struct {
-	Status types.InitStatus `json:"status"`
-	// +listType=atomic
-	Results []InitDeviceResult `json:"results"`
-}
-
-// InitDeviceResult represents the result of the InitDeviceRequest.
-type InitDeviceResult struct {
-	Name  string `json:"name"`
-	Error string `json:"error,omitempty"`
+// DirectPVInitRequestList denotes list of init request.
+type DirectPVInitRequestList struct {
+	metav1.TypeMeta `json:",inline"`
+	// metdata is the standard list metadata.
+	// +optional
+	metav1.ListMeta `json:"metadata"`
+	Items           []DirectPVInitRequest `json:"items"`
 }

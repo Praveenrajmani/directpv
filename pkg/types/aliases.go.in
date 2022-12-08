@@ -46,22 +46,25 @@ type (
 
 	NodeStatus          = directpv.NodeStatus
 	Node                = directpv.DirectPVNode
-	Device              = directpv.DirectPVDevice
+	Device              = directpv.Device
 	NodeStatusList      = []directpv.DirectPVNode
 	NodeList            = directpv.DirectPVNodeList
 	LatestNodeInterface = typeddirectpv.DirectPVNodeInterface
 
-	InitRequestStatus              = directpv.InitRequestStatus
-	InitRequest                    = directpv.DirectPVInitRequest
-	InitRequestStatusList          = []directpv.DirectPVInitRequest
-	InitRequestList                = directpv.DirectPVInitRequestList
-	LatestInitRequestInterface     = typeddirectpv.DirectPVInitRequestInterface
+	InitDeviceResult           = directpv.InitDeviceResult
+	InitResult                 = directpv.InitResult
+	InitDevice                 = directpv.InitDevice
+	InitRequestStatus          = directpv.InitRequestStatus
+	InitRequest                = directpv.DirectPVInitRequest
+	InitRequestStatusList      = []directpv.DirectPVInitRequest
+	InitRequestList            = directpv.DirectPVInitRequestList
+	LatestInitRequestInterface = typeddirectpv.DirectPVInitRequestInterface
 )
 
 var (
 	NewDrive  = directpv.NewDirectPVDrive
 	NewVolume = directpv.NewDirectPVVolume
-	NewNode = directpv.NewDirectPVNode
+	NewNode   = directpv.NewDirectPVNode
 )
 
 type ExtClientsetInterface interface {

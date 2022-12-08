@@ -30,7 +30,7 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.DirectPVDevice":          schema_pkg_apis_directpvminio_v1beta1_DirectPVDevice(ref),
+		"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.Device":                  schema_pkg_apis_directpvminio_v1beta1_Device(ref),
 		"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.DirectPVDrive":           schema_pkg_apis_directpvminio_v1beta1_DirectPVDrive(ref),
 		"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.DirectPVDriveList":       schema_pkg_apis_directpvminio_v1beta1_DirectPVDriveList(ref),
 		"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.DirectPVInitRequest":     schema_pkg_apis_directpvminio_v1beta1_DirectPVInitRequest(ref),
@@ -45,17 +45,18 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.InitDeviceResult":        schema_pkg_apis_directpvminio_v1beta1_InitDeviceResult(ref),
 		"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.InitRequestSpec":         schema_pkg_apis_directpvminio_v1beta1_InitRequestSpec(ref),
 		"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.InitRequestStatus":       schema_pkg_apis_directpvminio_v1beta1_InitRequestStatus(ref),
+		"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.InitResult":              schema_pkg_apis_directpvminio_v1beta1_InitResult(ref),
 		"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.NodeSpec":                schema_pkg_apis_directpvminio_v1beta1_NodeSpec(ref),
 		"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.NodeStatus":              schema_pkg_apis_directpvminio_v1beta1_NodeStatus(ref),
 		"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.VolumeStatus":            schema_pkg_apis_directpvminio_v1beta1_VolumeStatus(ref),
 	}
 }
 
-func schema_pkg_apis_directpvminio_v1beta1_DirectPVDevice(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_directpvminio_v1beta1_Device(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "DirectPVDevice denotes the device information in a drive",
+				Description: "Device denotes the device information in a drive",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
@@ -621,7 +622,7 @@ func schema_pkg_apis_directpvminio_v1beta1_InitDevice(ref common.ReferenceCallba
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "InitDevice represents the device requested for initialization.",
+				Description: "InitDevice represents device requested for initialization.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"id": {
@@ -663,7 +664,7 @@ func schema_pkg_apis_directpvminio_v1beta1_InitDeviceResult(ref common.Reference
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "InitDeviceResult represents the result of the InitDeviceRequest.",
+				Description: "InitDeviceResult represents init device result.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
@@ -690,33 +691,28 @@ func schema_pkg_apis_directpvminio_v1beta1_InitRequestSpec(ref common.ReferenceC
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "InitRequestSpec represents the spec for InitRequest.",
+				Description: "InitRequestSpec represents init request specification.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"devices": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
+					"response": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.InitDevice"),
+										Ref:     ref("github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.InitResult"),
 									},
 								},
 							},
 						},
 					},
 				},
-				Required: []string{"devices"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.InitDevice"},
+			"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.InitResult"},
 	}
 }
 
@@ -724,17 +720,60 @@ func schema_pkg_apis_directpvminio_v1beta1_InitRequestStatus(ref common.Referenc
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "InitRequestStatus represents the status of the InitRequest.",
+				Description: "InitRequestStatus represents status of InitRequest.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"status": {
+					"request": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type: []string{"array"},
+										Items: &spec.SchemaOrArray{
+											Schema: &spec.Schema{
+												SchemaProps: spec.SchemaProps{
+													Default: map[string]interface{}{},
+													Ref:     ref("github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.InitDevice"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"request"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.InitDevice"},
+	}
+}
+
+func schema_pkg_apis_directpvminio_v1beta1_InitResult(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "InitResult represents result of init device request.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"completed": {
+						SchemaProps: spec.SchemaProps{
+							Default: false,
+							Type:    []string{"boolean"},
 							Format:  "",
 						},
 					},
-					"results": {
+					"error": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"devices": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
 								"x-kubernetes-list-type": "atomic",
@@ -753,7 +792,7 @@ func schema_pkg_apis_directpvminio_v1beta1_InitRequestStatus(ref common.Referenc
 						},
 					},
 				},
-				Required: []string{"status", "results"},
+				Required: []string{"completed", "devices"},
 			},
 		},
 		Dependencies: []string{
@@ -799,7 +838,7 @@ func schema_pkg_apis_directpvminio_v1beta1_NodeStatus(ref common.ReferenceCallba
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.DirectPVDevice"),
+										Ref:     ref("github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.Device"),
 									},
 								},
 							},
@@ -833,7 +872,7 @@ func schema_pkg_apis_directpvminio_v1beta1_NodeStatus(ref common.ReferenceCallba
 			},
 		},
 		Dependencies: []string{
-			"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.DirectPVDevice", "k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
+			"github.com/minio/directpv/pkg/apis/directpv.min.io/v1beta1.Device", "k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
 	}
 }
 

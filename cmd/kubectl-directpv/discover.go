@@ -103,7 +103,7 @@ func toInitConfig(resultMap map[string][]types.Device) InitConfig {
 			})
 		}
 		nodeInfo = append(nodeInfo, NodeInfo{
-			Name:   node,
+			Name:   directpvtypes.NodeID(node),
 			Drives: driveInfo,
 		})
 	}

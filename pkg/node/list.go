@@ -1,5 +1,5 @@
 // This file is part of MinIO DirectPV
-// Copyright (c) 2021, 2022 MinIO, Inc.
+// Copyright (c) 2022 MinIO, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,7 @@ package node
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	directpvtypes "github.com/minio/directpv/pkg/apis/directpv.min.io/types"
 	"github.com/minio/directpv/pkg/client"
@@ -28,10 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/klog/v2"
 )
-
-var errUnsupportedSelector = errors.New("unsupported selector")
 
 // ListNodeResult denotes list of node result.
 type ListNodeResult struct {
@@ -80,8 +78,7 @@ func (lister *Lister) IgnoreNotFound(b bool) *Lister {
 
 // List returns channel to loop through node items.
 func (lister *Lister) List(ctx context.Context) <-chan ListNodeResult {
-	getOnly := len(lister.nodes) == 0 &&
-		len(lister.nodeNames) != 0
+	getOnly := len(lister.nodes) == 0 && len(lister.nodeNames) != 0
 
 	labelMap := map[directpvtypes.LabelKey][]directpvtypes.LabelValue{
 		directpvtypes.NodeLabelKey: lister.nodes,
@@ -176,47 +173,47 @@ func (lister *Lister) Get(ctx context.Context) ([]types.Node, error) {
 type WatchEvent struct {
 	Type watch.EventType
 	Node *types.Node
+	Err  error
 }
 
 // Watch looks for changes in NodeList and reports them.
 func (lister *Lister) Watch(ctx context.Context) (<-chan WatchEvent, func(), error) {
-	if len(lister.nodeNames) > 0 {
-		return nil, nil, errUnsupportedSelector
+	if len(lister.nodeNames) != 0 {
+		return nil, nil, errors.New("unsupported selector")
 	}
 
 	labelMap := map[directpvtypes.LabelKey][]directpvtypes.LabelValue{
 		directpvtypes.NodeLabelKey: lister.nodes,
 	}
-	nodeWatchInterface, err := client.NodeClient().Watch(ctx, metav1.ListOptions{
+	watcher, err := client.NodeClient().Watch(ctx, metav1.ListOptions{
 		LabelSelector: directpvtypes.ToLabelSelector(labelMap),
 	})
 	if err != nil {
 		return nil, nil, err
 	}
-	stopFn := nodeWatchInterface.Stop
 
 	watchCh := make(chan WatchEvent)
 	go func() {
 		defer close(watchCh)
-		resultCh := nodeWatchInterface.ResultChan()
-		for {
-			result, ok := <-resultCh
-			if !ok {
-				break
-			}
+		for result := range watcher.ResultChan() {
 			unstructured := result.Object.(*unstructured.Unstructured)
-			var node types.Node
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructured.Object, &node)
+			node := &types.Node{}
+			err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructured.Object, node)
 			if err != nil {
-				klog.ErrorS(err, "unable to convert unstructured object %s", unstructured.GetName())
-				break
+				err = fmt.Errorf("unable to convert unstructured object %s; %w", unstructured.GetName(), err)
+				node = nil
 			}
 			watchCh <- WatchEvent{
 				Type: result.Type,
-				Node: &node,
+				Node: node,
+				Err:  err,
+			}
+
+			if err != nil {
+				break
 			}
 		}
 	}()
 
-	return watchCh, stopFn, nil
+	return watchCh, watcher.Stop, nil
 }
