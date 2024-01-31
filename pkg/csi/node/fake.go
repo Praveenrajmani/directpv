@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/minio/directpv/pkg/client"
 	"github.com/minio/directpv/pkg/consts"
 	"github.com/minio/directpv/pkg/utils"
 	"github.com/minio/directpv/pkg/xfs"
@@ -27,7 +28,11 @@ import (
 
 const testNodeName = "test-node"
 
-func createFakeServer() *Server {
+func createFakeServer() (*Server, error) {
+	client, err := client.NewFakeClient()
+	if err != nil {
+		return nil, err
+	}
 	return &Server{
 		nodeID:   testNodeName,
 		identity: "test-identity",
@@ -52,5 +57,6 @@ func createFakeServer() *Server {
 			}
 			return nil
 		},
+		client: client,
 	}
 }

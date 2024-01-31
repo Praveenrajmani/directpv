@@ -28,11 +28,16 @@ import (
 )
 
 func TestGetVolumeList(t *testing.T) {
+	SetFakeMode()
+	fakeClient, err := NewFakeClient()
+	if err != nil {
+		t.Fatalf("unable to create fake client; %v", err)
+	}
 	clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset())
-	SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
-	SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+	fakeClient.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+	fakeClient.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
 
-	volumes, err := NewVolumeLister().Get(context.TODO())
+	volumes, err := fakeClient.NewVolumeLister().Get(context.TODO())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -48,10 +53,10 @@ func TestGetVolumeList(t *testing.T) {
 	}
 
 	clientset = types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(objects...))
-	SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
-	SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+	fakeClient.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+	fakeClient.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
 
-	volumes, err = NewVolumeLister().Get(context.TODO())
+	volumes, err = fakeClient.NewVolumeLister().Get(context.TODO())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -61,11 +66,16 @@ func TestGetVolumeList(t *testing.T) {
 }
 
 func TestGetSortedVolumeList(t *testing.T) {
+	SetFakeMode()
+	fakeClient, err := NewFakeClient()
+	if err != nil {
+		t.Fatalf("unable to create fake client; %v", err)
+	}
 	clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset())
-	SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
-	SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+	fakeClient.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+	fakeClient.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
 
-	volumes, err := NewVolumeLister().Get(context.TODO())
+	volumes, err := fakeClient.NewVolumeLister().Get(context.TODO())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -91,10 +101,10 @@ func TestGetSortedVolumeList(t *testing.T) {
 	}
 
 	clientset = types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(objects...))
-	SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
-	SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+	fakeClient.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+	fakeClient.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
 
-	volumes, err = NewVolumeLister().Get(context.TODO())
+	volumes, err = fakeClient.NewVolumeLister().Get(context.TODO())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

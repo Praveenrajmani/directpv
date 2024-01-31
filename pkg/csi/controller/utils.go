@@ -25,7 +25,6 @@ import (
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	directpvtypes "github.com/minio/directpv/pkg/apis/directpv.min.io/types"
-	"github.com/minio/directpv/pkg/client"
 	"github.com/minio/directpv/pkg/consts"
 	"github.com/minio/directpv/pkg/types"
 	"google.golang.org/grpc/codes"
@@ -103,11 +102,11 @@ func matchDrive(drive *types.Drive, req *csi.CreateVolumeRequest) bool {
 	return len(req.GetAccessibilityRequirements().GetPreferred()) == 0 && len(req.GetAccessibilityRequirements().GetRequisite()) == 0
 }
 
-func getFilteredDrives(ctx context.Context, req *csi.CreateVolumeRequest) (drives []types.Drive, err error) {
+func (s Server) getFilteredDrives(ctx context.Context, req *csi.CreateVolumeRequest) (drives []types.Drive, err error) {
 	ctx, cancelFunc := context.WithCancel(ctx)
 	defer cancelFunc()
 
-	for result := range client.NewDriveLister().List(ctx) {
+	for result := range s.client.NewDriveLister().List(ctx) {
 		if result.Err != nil {
 			return nil, result.Err
 		}
@@ -124,8 +123,8 @@ func getFilteredDrives(ctx context.Context, req *csi.CreateVolumeRequest) (drive
 	return drives, nil
 }
 
-func selectDrive(ctx context.Context, req *csi.CreateVolumeRequest) (*types.Drive, error) {
-	drives, err := getFilteredDrives(ctx, req)
+func (s Server) selectDrive(ctx context.Context, req *csi.CreateVolumeRequest) (*types.Drive, error) {
+	drives, err := s.getFilteredDrives(ctx, req)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

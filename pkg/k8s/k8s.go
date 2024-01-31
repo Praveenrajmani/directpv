@@ -64,8 +64,8 @@ func GetKubeConfig() (*rest.Config, error) {
 }
 
 // GetGroupVersionKind gets group/version/kind of given versions.
-func GetGroupVersionKind(group, kind string, versions ...string) (*schema.GroupVersionKind, error) {
-	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
+func (c Client) GetGroupVersionKind(group, kind string, versions ...string) (*schema.GroupVersionKind, error) {
+	apiGroupResources, err := restmapper.GetAPIGroupResources(c.DiscoveryClient)
 	if err != nil {
 		klog.ErrorS(err, "unable to get API group resources")
 		return nil, err
@@ -90,13 +90,13 @@ func GetGroupVersionKind(group, kind string, versions ...string) (*schema.GroupV
 }
 
 // GetClientForNonCoreGroupVersionKind gets client for group/kind of given versions.
-func GetClientForNonCoreGroupVersionKind(group, kind string, versions ...string) (rest.Interface, *schema.GroupVersionKind, error) {
-	gvk, err := GetGroupVersionKind(group, kind, versions...)
+func (c Client) GetClientForNonCoreGroupVersionKind(group, kind string, versions ...string) (rest.Interface, *schema.GroupVersionKind, error) {
+	gvk, err := c.GetGroupVersionKind(group, kind, versions...)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	config := *kubeConfig
+	config := *c.KubeConfig
 	config.GroupVersion = &schema.GroupVersion{
 		Group:   gvk.Group,
 		Version: gvk.Version,
@@ -199,8 +199,8 @@ func SanitizeResourceName(name string) string {
 }
 
 // GetCSINodes fetches the CSI Node list
-func GetCSINodes(ctx context.Context) (nodes []string, err error) {
-	storageClient, gvk, err := GetClientForNonCoreGroupVersionKind("storage.k8s.io", "CSINode", "v1", "v1beta1", "v1alpha1")
+func (c Client) GetCSINodes(ctx context.Context) (nodes []string, err error) {
+	storageClient, gvk, err := c.GetClientForNonCoreGroupVersionKind("storage.k8s.io", "CSINode", "v1", "v1beta1", "v1alpha1")
 	if err != nil {
 		return nil, err
 	}

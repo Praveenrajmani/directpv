@@ -49,6 +49,7 @@ type Server struct {
 	getQuota          func(ctx context.Context, device, volumeName string) (quota *xfs.Quota, err error)
 	setQuota          func(ctx context.Context, device, path, volumeName string, quota xfs.Quota, update bool) (err error)
 	mkdir             func(path string) error
+	client            *client.Client
 }
 
 func newServer(identity string, nodeID directpvtypes.NodeID, rack, zone, region string) Server {
@@ -78,10 +79,15 @@ func newServer(identity string, nodeID directpvtypes.NodeID, rack, zone, region 
 func NewServer(ctx context.Context,
 	identity string, nodeID directpvtypes.NodeID, rack, zone, region string,
 	metricsPort int,
-) *Server {
+) (*Server, error) {
 	go metrics.ServeMetrics(ctx, nodeID, metricsPort)
 	server := newServer(identity, nodeID, rack, zone, region)
-	return &server
+	client, err := client.NewClient()
+	if err != nil {
+		return nil, err
+	}
+	server.client = client
+	return &server, nil
 }
 
 // NodeGetInfo gets node information.
@@ -137,7 +143,7 @@ func (server *Server) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVo
 		return &csi.NodeGetVolumeStatsResponse{}, nil
 	}
 
-	volume, err := client.VolumeClient().Get(ctx, volumeID, metav1.GetOptions{
+	volume, err := server.client.VolumeClient.Get(ctx, volumeID, metav1.GetOptions{
 		TypeMeta: types.NewVolumeTypeMeta(),
 	})
 	if err != nil {
@@ -208,7 +214,7 @@ func (server *Server) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandV
 		return nil, status.Errorf(codes.InvalidArgument, "invalid capacity range in the request for volume %v expansion", volumeID)
 	}
 
-	volume, err := client.VolumeClient().Get(ctx, volumeID, metav1.GetOptions{
+	volume, err := server.client.VolumeClient.Get(ctx, volumeID, metav1.GetOptions{
 		TypeMeta: types.NewVolumeTypeMeta(),
 	})
 	if err != nil {
@@ -258,7 +264,7 @@ func (server *Server) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandV
 
 	volume.Status.TotalCapacity = requiredBytes
 	volume.Status.AvailableCapacity = volume.Status.TotalCapacity - volume.Status.UsedCapacity
-	_, err = client.VolumeClient().Update(ctx, volume, metav1.UpdateOptions{
+	_, err = server.client.VolumeClient.Update(ctx, volume, metav1.UpdateOptions{
 		TypeMeta: types.NewVolumeTypeMeta(),
 	})
 	if err != nil {

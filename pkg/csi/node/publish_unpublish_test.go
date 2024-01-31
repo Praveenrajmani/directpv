@@ -30,6 +30,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func init() {
+	client.SetFakeMode()
+}
+
 func TestNodePublishVolume(t *testing.T) {
 	req := &csi.NodePublishVolumeRequest{
 		VolumeId:          "volume-id-1",
@@ -49,11 +53,15 @@ func TestNodePublishVolume(t *testing.T) {
 	volume.Status = types.VolumeStatus{StagingTargetPath: "volume-id-1-staging-target-path"}
 	drive := types.NewDrive(driveID, types.DriveStatus{}, nodeID, driveName, accessTier)
 
-	clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(drive, volume))
-	client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
-	client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+	nodeServer, err := createFakeServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
 
-	nodeServer := createFakeServer()
+	clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(drive, volume))
+	nodeServer.client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+	nodeServer.client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+
 	if _, err := nodeServer.NodePublishVolume(context.TODO(), req); err == nil {
 		t.Fatalf("expected error, but succeeded")
 	}

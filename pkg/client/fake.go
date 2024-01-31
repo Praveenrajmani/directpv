@@ -22,39 +22,72 @@ import (
 	"github.com/minio/directpv/pkg/types"
 )
 
-// FakeInit initializes fake clients.
-func FakeInit() {
-	k8s.FakeInit()
+var fakeMode bool
 
-	clientsetInterface = types.NewExtFakeClientset(fake.NewSimpleClientset())
-	driveClient = clientsetInterface.DirectpvLatest().DirectPVDrives()
-	volumeClient = clientsetInterface.DirectpvLatest().DirectPVVolumes()
-	nodeClient = clientsetInterface.DirectpvLatest().DirectPVNodes()
-	initRequestClient = clientsetInterface.DirectpvLatest().DirectPVInitRequests()
+// SetFakeMode sets fakeMode which uses only fake clients
+func SetFakeMode() {
+	fakeMode = true
+	k8s.SetFakeMode()
+}
 
-	initEvent(k8s.KubeClient())
+// NewFakeClient initializes fake clients.
+func NewFakeClient() (*Client, error) {
+	k8sClient, err := k8s.NewFakeClient()
+	if err != nil {
+		return nil, err
+	}
+
+	clientsetInterface := types.NewExtFakeClientset(fake.NewSimpleClientset())
+	driveClient := clientsetInterface.DirectpvLatest().DirectPVDrives()
+	volumeClient := clientsetInterface.DirectpvLatest().DirectPVVolumes()
+	nodeClient := clientsetInterface.DirectpvLatest().DirectPVNodes()
+	initRequestClient := clientsetInterface.DirectpvLatest().DirectPVInitRequests()
+	restClient := clientsetInterface.DirectpvLatest().RESTClient()
+
+	initEvent(k8sClient.KubeClient)
+	return &Client{
+		KubernetesClient:   k8sClient,
+		ClientsetInterface: clientsetInterface,
+		RESTClient:         restClient,
+		DriveClient:        driveClient,
+		VolumeClient:       volumeClient,
+		NodeClient:         nodeClient,
+		InitRequestClient:  initRequestClient,
+	}, nil
 }
 
 // SetDriveInterface sets latest drive interface.
 // Note: To be used for writing test cases only
-func SetDriveInterface(i types.LatestDriveInterface) {
-	driveClient = i
+func (c *Client) SetDriveInterface(i types.LatestDriveInterface) {
+	if !fakeMode {
+		return
+	}
+	c.DriveClient = i
 }
 
 // SetVolumeInterface sets the latest volume interface.
 // Note: To be used for writing test cases only
-func SetVolumeInterface(i types.LatestVolumeInterface) {
-	volumeClient = i
+func (c *Client) SetVolumeInterface(i types.LatestVolumeInterface) {
+	if !fakeMode {
+		return
+	}
+	c.VolumeClient = i
 }
 
 // SetNodeInterface sets latest node interface.
 // Note: To be used for writing test cases only
-func SetNodeInterface(i types.LatestNodeInterface) {
-	nodeClient = i
+func (c *Client) SetNodeInterface(i types.LatestNodeInterface) {
+	if !fakeMode {
+		return
+	}
+	c.NodeClient = i
 }
 
 // SetInitRequestInterface sets latest initrequest interface.
 // Note: To be used for writing test cases only
-func SetInitRequestInterface(i types.LatestInitRequestInterface) {
-	initRequestClient = i
+func (c *Client) SetInitRequestInterface(i types.LatestInitRequestInterface) {
+	if !fakeMode {
+		return
+	}
+	c.InitRequestClient = i
 }

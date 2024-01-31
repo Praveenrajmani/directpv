@@ -33,7 +33,7 @@ import (
 )
 
 func init() {
-	client.FakeInit()
+	client.SetFakeMode()
 }
 
 const MiB = 1024 * 1024
@@ -127,11 +127,14 @@ func TestCreateAndDeleteVolumeRPCs(t *testing.T) {
 	}
 
 	ctx := context.TODO()
-	cl := NewServer()
+	cl, err := NewServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
 
 	clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(testDriveObjects...))
-	client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
-	client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+	cl.client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+	cl.client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
 
 	for _, cvReq := range createVolumeRequests {
 		volName := cvReq.GetName()
@@ -152,7 +155,7 @@ func TestCreateAndDeleteVolumeRPCs(t *testing.T) {
 			t.Errorf("[%s] Accessible topology not matching with preferred topology in the request. Expected: %v, Got: %v", volName, cvReq.GetAccessibilityRequirements().GetPreferred(), vol.GetAccessibleTopology())
 		}
 		// Step 4: Fetch the created volume object by volumeID
-		volObj, gErr := client.VolumeClient().Get(ctx, volumeID, metav1.GetOptions{
+		volObj, gErr := cl.client.VolumeClient.Get(ctx, volumeID, metav1.GetOptions{
 			TypeMeta: types.NewVolumeTypeMeta(),
 		})
 		if gErr != nil {
@@ -175,8 +178,8 @@ func TestCreateAndDeleteVolumeRPCs(t *testing.T) {
 	}
 
 	// Fetch the drive objects
-	client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
-	driveList, err := client.NewDriveLister().Get(ctx)
+	cl.client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+	driveList, err := cl.client.NewDriveLister().Get(ctx)
 	if err != nil {
 		t.Errorf("Listing drives failed: %v", err)
 	}
@@ -243,11 +246,14 @@ func TestAbnormalDeleteVolume(t1 *testing.T) {
 	}
 
 	ctx := context.TODO()
-	cl := NewServer()
+	cl, err := NewServer()
+	if err != nil {
+		t1.Fatalf("unable to create server; %v", err)
+	}
 
 	clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(testVolumeObjects...))
-	client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
-	client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+	cl.client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+	cl.client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
 
 	for _, dvReq := range deleteVolumeRequests {
 		if _, err := cl.DeleteVolume(ctx, &dvReq); err == nil {
@@ -257,7 +263,11 @@ func TestAbnormalDeleteVolume(t1 *testing.T) {
 }
 
 func TestControllerGetCapabilities(t *testing.T) {
-	result, err := NewServer().ControllerGetCapabilities(context.TODO(), nil)
+	cl, err := NewServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
+	result, err := cl.ControllerGetCapabilities(context.TODO(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -316,7 +326,11 @@ func TestValidateVolumeCapabilities(t *testing.T) {
 		},
 	}
 
-	controller := NewServer()
+	controller, err := NewServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
+
 	for i, testCase := range testCases {
 		result, err := controller.ValidateVolumeCapabilities(context.TODO(), testCase.request)
 		if err != nil {
@@ -330,19 +344,31 @@ func TestValidateVolumeCapabilities(t *testing.T) {
 }
 
 func TestListVolumes(t *testing.T) {
-	if _, err := NewServer().ListVolumes(context.TODO(), nil); err == nil {
+	controller, err := NewServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
+	if _, err := controller.ListVolumes(context.TODO(), nil); err == nil {
 		t.Fatal("error expected")
 	}
 }
 
 func TestControllerPublishVolume(t *testing.T) {
-	if _, err := NewServer().ControllerPublishVolume(context.TODO(), nil); err == nil {
+	controller, err := NewServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
+	if _, err := controller.ControllerPublishVolume(context.TODO(), nil); err == nil {
 		t.Fatal("error expected")
 	}
 }
 
 func TestControllerUnpublishVolume(t *testing.T) {
-	if _, err := NewServer().ControllerUnpublishVolume(context.TODO(), nil); err == nil {
+	controller, err := NewServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
+	if _, err := controller.ControllerUnpublishVolume(context.TODO(), nil); err == nil {
 		t.Fatal("error expected")
 	}
 }
@@ -381,45 +407,69 @@ func TestControllerExpandVolume(t *testing.T) {
 	volume.Status.StagingTargetPath = "/path/staging/targetpath"
 	volume.Status.UsedCapacity = 50
 
+	controller, err := NewServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
+
 	clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(volume, drive))
-	client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
-	client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+	controller.client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+	controller.client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
 
 	ctx := context.TODO()
-	server := NewServer()
 	for i, req := range reqs {
-		if _, err := server.ControllerExpandVolume(ctx, &req); err != nil {
+		if _, err := controller.ControllerExpandVolume(ctx, &req); err != nil {
 			t.Errorf("case %v: expected: success; but failed by %v", i+1, err)
 		}
 	}
 }
 
 func TestControllerGetVolume(t *testing.T) {
-	if _, err := NewServer().ControllerGetVolume(context.TODO(), nil); err == nil {
+	controller, err := NewServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
+	if _, err := controller.ControllerGetVolume(context.TODO(), nil); err == nil {
 		t.Fatal("error expected")
 	}
 }
 
 func TestListSnapshots(t *testing.T) {
-	if _, err := NewServer().ListSnapshots(context.TODO(), nil); err == nil {
+	controller, err := NewServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
+	if _, err := controller.ListSnapshots(context.TODO(), nil); err == nil {
 		t.Fatal("error expected")
 	}
 }
 
 func TestCreateSnapshot(t *testing.T) {
-	if _, err := NewServer().CreateSnapshot(context.TODO(), nil); err == nil {
+	controller, err := NewServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
+	if _, err := controller.CreateSnapshot(context.TODO(), nil); err == nil {
 		t.Fatal("error expected")
 	}
 }
 
 func TestDeleteSnapshot(t *testing.T) {
-	if _, err := NewServer().DeleteSnapshot(context.TODO(), nil); err == nil {
+	controller, err := NewServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
+	if _, err := controller.DeleteSnapshot(context.TODO(), nil); err == nil {
 		t.Fatal("error expected")
 	}
 }
 
 func TestGetCapacity(t *testing.T) {
-	if _, err := NewServer().GetCapacity(context.TODO(), nil); err == nil {
+	controller, err := NewServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
+	if _, err := controller.GetCapacity(context.TODO(), nil); err == nil {
 		t.Fatal("error expected")
 	}
 }

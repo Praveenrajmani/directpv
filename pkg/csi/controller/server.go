@@ -75,11 +75,19 @@ var volumeClaimIDRegex = regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-f
  */
 
 // Server denotes controller server.
-type Server struct{}
+type Server struct {
+	client *client.Client
+}
 
 // NewServer creates new controller server.
-func NewServer() *Server {
-	return &Server{}
+func NewServer() (*Server, error) {
+	client, err := client.NewClient()
+	if err != nil {
+		return nil, fmt.Errorf("unable to create client; %v", err)
+	}
+	return &Server{
+		client: client,
+	}, nil
 }
 
 // ControllerGetCapabilities constructs ControllerGetCapabilitiesResponse
@@ -189,12 +197,12 @@ func (c *Server) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 	)
 	newVolume.SetClaimID(volumeClaimID)
 
-	if _, err := client.VolumeClient().Create(ctx, newVolume, metav1.CreateOptions{}); err != nil {
+	if _, err := c.client.VolumeClient.Create(ctx, newVolume, metav1.CreateOptions{}); err != nil {
 		if !errors.IsAlreadyExists(err) {
 			return nil, status.Errorf(codes.Internal, "unable to create volume %v; %v", name, err)
 		}
 
-		volume, err := client.VolumeClient().Get(
+		volume, err := c.client.VolumeClient.Get(
 			ctx, newVolume.Name, metav1.GetOptions{TypeMeta: types.NewVolumeTypeMeta()},
 		)
 		if err != nil {
@@ -204,7 +212,7 @@ func (c *Server) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 		volume.CopyLabels(newVolume)
 		volume.Finalizers = newVolume.Finalizers
 		volume.Status = newVolume.Status
-		_, err = client.VolumeClient().Update(
+		_, err = c.client.VolumeClient.Update(
 			ctx, volume, metav1.UpdateOptions{TypeMeta: types.NewVolumeTypeMeta()},
 		)
 		if err != nil {
@@ -227,7 +235,7 @@ func (c *Server) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest)
 			"name", drive.GetDriveName(),
 			"volume", name)
 
-		_, err = client.DriveClient().Update(
+		_, err = c.client.DriveClient.Update(
 			ctx, drive, metav1.UpdateOptions{TypeMeta: types.NewDriveTypeMeta()},
 		)
 		if err != nil {
@@ -260,7 +268,7 @@ func (c *Server) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 		return nil, status.Error(codes.InvalidArgument, "empty volume ID in the request")
 	}
 
-	volume, err := client.VolumeClient().Get(ctx, volumeID, metav1.GetOptions{
+	volume, err := c.client.VolumeClient.Get(ctx, volumeID, metav1.GetOptions{
 		TypeMeta: types.NewVolumeTypeMeta(),
 	})
 	if err != nil {
@@ -275,14 +283,14 @@ func (c *Server) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest)
 	}
 
 	volume.RemovePVProtection()
-	_, err = client.VolumeClient().Update(ctx, volume, metav1.UpdateOptions{
+	_, err = c.client.VolumeClient.Update(ctx, volume, metav1.UpdateOptions{
 		TypeMeta: types.NewVolumeTypeMeta(),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to update volume %v; %v", volumeID, err)
 	}
 
-	if err = client.VolumeClient().Delete(ctx, volume.Name, metav1.DeleteOptions{}); err != nil {
+	if err = c.client.VolumeClient.Delete(ctx, volume.Name, metav1.DeleteOptions{}); err != nil {
 		return nil, status.Errorf(codes.Internal, "unable to delete volume %v; %v", volumeID, err)
 	}
 
@@ -302,7 +310,7 @@ func (c *Server) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 	}
 	requiredBytes := req.CapacityRange.RequiredBytes
 
-	volume, err := client.VolumeClient().Get(ctx, volumeID, metav1.GetOptions{
+	volume, err := c.client.VolumeClient.Get(ctx, volumeID, metav1.GetOptions{
 		TypeMeta: types.NewVolumeTypeMeta(),
 	})
 	if err != nil {
@@ -318,7 +326,7 @@ func (c *Server) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 		return &csi.ControllerExpandVolumeResponse{CapacityBytes: requiredBytes}, nil
 	}
 
-	drive, err := client.DriveClient().Get(
+	drive, err := c.client.DriveClient.Get(
 		ctx, string(volume.GetDriveID()), metav1.GetOptions{TypeMeta: types.NewDriveTypeMeta()},
 	)
 	if err != nil {
@@ -339,7 +347,7 @@ func (c *Server) ControllerExpandVolume(ctx context.Context, req *csi.Controller
 	drive.Status.FreeCapacity -= size
 	drive.Status.AllocatedCapacity += size
 
-	_, err = client.DriveClient().Update(
+	_, err = c.client.DriveClient.Update(
 		ctx, drive, metav1.UpdateOptions{TypeMeta: types.NewDriveTypeMeta()},
 	)
 	if err != nil {

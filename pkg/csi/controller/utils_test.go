@@ -32,6 +32,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+func init() {
+	client.SetFakeMode()
+}
+
 const GiB = 1024 * 1024 * 1024
 
 func newDriveWithLabels(driveID directpvtypes.DriveID, status types.DriveStatus, nodeID directpvtypes.NodeID, driveName directpvtypes.DriveName, labels map[directpvtypes.LabelKey]directpvtypes.LabelValue) *types.Drive {
@@ -478,10 +482,15 @@ func TestGetFilteredDrives(t *testing.T) {
 		{case14Objects, case14Request, case14Result},
 	}
 
+	s, err := NewServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
+
 	for i, testCase := range testCases {
 		clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(testCase.objects...))
-		client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
-		result, err := getFilteredDrives(context.TODO(), testCase.request)
+		s.client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+		result, err := s.getFilteredDrives(context.TODO(), testCase.request)
 		if err != nil {
 			t.Fatalf("case %v: unexpected error: %v", i+1, err)
 		}
@@ -548,12 +557,17 @@ func TestGetDrive(t *testing.T) {
 		{case2Objects, case2Request, case2Result, false},
 	}
 
+	s, err := NewServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
+
 	for i, testCase := range testCases {
 		clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(testCase.objects...))
-		client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
-		client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+		s.client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+		s.client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
 
-		result, err := selectDrive(context.TODO(), testCase.request)
+		result, err := s.selectDrive(context.TODO(), testCase.request)
 		if err != nil && !testCase.expectErr {
 			t.Fatalf("case %v: unable to select drive; %v", i+1, err)
 		}
@@ -601,8 +615,8 @@ func TestGetDrive(t *testing.T) {
 	request := &csi.CreateVolumeRequest{Name: "volume-1", CapacityRange: &csi.CapacityRange{RequiredBytes: 2 * GiB}}
 
 	clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(objects...))
-	client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
-	result, err := selectDrive(context.TODO(), request)
+	s.client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+	result, err := s.selectDrive(context.TODO(), request)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

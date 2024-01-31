@@ -18,7 +18,6 @@ package k8s
 
 import (
 	"fmt"
-	"sync/atomic"
 
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	"k8s.io/client-go/discovery"
@@ -31,30 +30,54 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
 
-// Init initializes various client interfaces.
-func Init() error {
-	if atomic.AddInt32(&initialized, 1) != 1 {
-		return nil
+// MaxThreadCount is maximum thread count.
+const MaxThreadCount = 200
+
+// Client represents the kubernetes client set.
+type Client struct {
+	KubeConfig          *rest.Config
+	KubeClient          kubernetes.Interface
+	APIextensionsClient apiextensions.ApiextensionsV1Interface
+	CRDClient           apiextensions.CustomResourceDefinitionInterface
+	DiscoveryClient     discovery.DiscoveryInterface
+}
+
+// NewClient initializes and returns k8s client.
+func NewClient() (*Client, error) {
+	if fakeMode {
+		return NewFakeClient()
 	}
-
-	var err error
-
-	if kubeConfig, err = GetKubeConfig(); err != nil {
-		return fmt.Errorf("unable to get kubernetes configuration; %v", err)
+	kubeConfig, err := GetKubeConfig()
+	if err != nil {
+		return nil, fmt.Errorf("unable to get kubernetes configuration; %v", err)
 	}
-
 	kubeConfig.WarningHandler = rest.NoWarnings{}
-	if kubeClient, err = kubernetes.NewForConfig(kubeConfig); err != nil {
-		return fmt.Errorf("unable to create new kubernetes client interface; %v", err)
-	}
+	return NewClientWithConfig(kubeConfig)
+}
 
-	if apiextensionsClient, err = apiextensions.NewForConfig(kubeConfig); err != nil {
-		return fmt.Errorf("unable to create new API extensions client interface; %v", err)
+// NewClientWithConfig initializes the client with the provided kube config.
+func NewClientWithConfig(kubeConfig *rest.Config) (*Client, error) {
+	if fakeMode {
+		return NewFakeClient()
 	}
-	crdClient = apiextensionsClient.CustomResourceDefinitions()
-
-	if discoveryClient, err = discovery.NewDiscoveryClientForConfig(kubeConfig); err != nil {
-		return fmt.Errorf("unable to create new discovery client interface; %v", err)
+	kubeClient, err := kubernetes.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create new kubernetes client interface; %v", err)
 	}
-	return nil
+	apiextensionsClient, err := apiextensions.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create new API extensions client interface; %v", err)
+	}
+	crdClient := apiextensionsClient.CustomResourceDefinitions()
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(kubeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create new discovery client interface; %v", err)
+	}
+	return &Client{
+		KubeConfig:          kubeConfig,
+		KubeClient:          kubeClient,
+		APIextensionsClient: apiextensionsClient,
+		CRDClient:           crdClient,
+		DiscoveryClient:     discoveryClient,
+	}, nil
 }

@@ -25,9 +25,7 @@ import (
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	directpvtypes "github.com/minio/directpv/pkg/apis/directpv.min.io/types"
-	"github.com/minio/directpv/pkg/client"
 	"github.com/minio/directpv/pkg/consts"
-	"github.com/minio/directpv/pkg/k8s"
 	"github.com/minio/directpv/pkg/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -63,14 +61,14 @@ func parseVolumeContext(volumeContext map[string]string) (name, ns string, err e
 	return
 }
 
-func getPodInfo(ctx context.Context, req *csi.NodePublishVolumeRequest) (podName, podNS string, podLabels map[string]string) {
+func (server Server) getPodInfo(ctx context.Context, req *csi.NodePublishVolumeRequest) (podName, podNS string, podLabels map[string]string) {
 	var err error
 	if podName, podNS, err = parseVolumeContext(req.GetVolumeContext()); err != nil {
 		klog.ErrorS(err, "unable to parse volume context", "context", req.GetVolumeContext(), "volume", req.GetVolumeId())
 		return
 	}
 
-	if pod, err := k8s.KubeClient().CoreV1().Pods(podNS).Get(ctx, podName, metav1.GetOptions{}); err != nil {
+	if pod, err := server.client.K8s().KubeClient.CoreV1().Pods(podNS).Get(ctx, podName, metav1.GetOptions{}); err != nil {
 		klog.ErrorS(err, "unable to get pod information", "name", podName, "namespace", podNS)
 	} else {
 		podLabels = pod.GetLabels()
@@ -79,8 +77,8 @@ func getPodInfo(ctx context.Context, req *csi.NodePublishVolumeRequest) (podName
 	return
 }
 
-func isDriveSuspended(ctx context.Context, driveID directpvtypes.DriveID) bool {
-	drive, err := client.DriveClient().Get(ctx, string(driveID), metav1.GetOptions{
+func (server Server) isDriveSuspended(ctx context.Context, driveID directpvtypes.DriveID) bool {
+	drive, err := server.client.DriveClient.Get(ctx, string(driveID), metav1.GetOptions{
 		TypeMeta: types.NewDriveTypeMeta(),
 	})
 	if err != nil {
@@ -110,12 +108,12 @@ func (server *Server) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 		return nil, status.Error(codes.InvalidArgument, "target path must not be empty")
 	}
 
-	volume, err := client.VolumeClient().Get(ctx, req.GetVolumeId(), metav1.GetOptions{TypeMeta: types.NewVolumeTypeMeta()})
+	volume, err := server.client.VolumeClient.Get(ctx, req.GetVolumeId(), metav1.GetOptions{TypeMeta: types.NewVolumeTypeMeta()})
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	isSuspended := volume.IsSuspended() || isDriveSuspended(ctx, volume.GetDriveID())
+	isSuspended := volume.IsSuspended() || server.isDriveSuspended(ctx, volume.GetDriveID())
 	if !isSuspended && volume.Status.StagingTargetPath != req.GetStagingTargetPath() {
 		return nil, status.Errorf(codes.FailedPrecondition, "volume %v is not yet staged, but requested with %v", volume.Name, req.GetStagingTargetPath())
 	}
@@ -125,7 +123,7 @@ func (server *Server) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 		return nil, status.Errorf(codes.Internal, "unable to publish volume; %v", err)
 	}
 
-	podName, podNS, podLabels := getPodInfo(ctx, req)
+	podName, podNS, podLabels := server.getPodInfo(ctx, req)
 	volume.SetPodName(podName)
 	volume.SetPodNS(podNS)
 	for key, value := range podLabels {
@@ -135,7 +133,7 @@ func (server *Server) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	}
 
 	volume.Status.TargetPath = req.GetTargetPath()
-	_, err = client.VolumeClient().Update(ctx, volume, metav1.UpdateOptions{
+	_, err = server.client.VolumeClient.Update(ctx, volume, metav1.UpdateOptions{
 		TypeMeta: types.NewVolumeTypeMeta(),
 	})
 	if err != nil {
@@ -196,7 +194,7 @@ func (server *Server) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpu
 		return nil, status.Error(codes.InvalidArgument, "targetPath missing in request")
 	}
 
-	volume, err := client.VolumeClient().Get(ctx, volumeID, metav1.GetOptions{
+	volume, err := server.client.VolumeClient.Get(ctx, volumeID, metav1.GetOptions{
 		TypeMeta: types.NewVolumeTypeMeta(),
 	})
 	if err != nil {
@@ -213,7 +211,7 @@ func (server *Server) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpu
 
 	if volume.Status.TargetPath == targetPath {
 		volume.Status.TargetPath = ""
-		if _, err := client.VolumeClient().Update(ctx, volume, metav1.UpdateOptions{
+		if _, err := server.client.VolumeClient.Update(ctx, volume, metav1.UpdateOptions{
 			TypeMeta: types.NewVolumeTypeMeta(),
 		}); err != nil {
 			return nil, err

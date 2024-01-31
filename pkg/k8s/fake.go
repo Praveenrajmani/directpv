@@ -26,6 +26,8 @@ import (
 	kubernetesfake "k8s.io/client-go/kubernetes/fake"
 )
 
+var fakeMode bool
+
 type fakeServerGroupsAndResourcesMethod func() ([]*metav1.APIGroup, []*metav1.APIResourceList, error)
 
 // FakeDiscovery creates fake discovery.
@@ -45,30 +47,48 @@ func (fd *FakeDiscovery) ServerGroupsAndResources() ([]*metav1.APIGroup, []*meta
 	return fd.fakeServerGroupsAndResourcesMethod()
 }
 
-// FakeInit initializes fake clients.
-func FakeInit() {
+// SetFakeMode sets fakeMode which uses only fake clients
+func SetFakeMode() {
+	fakeMode = true
+}
+
+// NewClient initializes and returns k8s client.
+func NewFakeClient() (*Client, error) {
+	var kubeClient kubernetes.Interface
 	kubeClient = kubernetesfake.NewSimpleClientset()
-	crdClient = &apiextensionsv1fake.FakeCustomResourceDefinitions{
+	crdClient := &apiextensionsv1fake.FakeCustomResourceDefinitions{
 		Fake: &apiextensionsv1fake.FakeApiextensionsV1{
 			Fake: &kubeClient.(*kubernetesfake.Clientset).Fake,
 		},
 	}
-	discoveryClient = &discoveryfake.FakeDiscovery{}
+	discoveryClient := &discoveryfake.FakeDiscovery{}
 	scheme := runtime.NewScheme()
 	_ = metav1.AddMetaToScheme(scheme)
+	return &Client{
+		KubeClient:      kubeClient,
+		CRDClient:       crdClient,
+		DiscoveryClient: discoveryClient,
+	}, nil
+
 }
 
 // SetKubeInterface sets the given kube interface
 // Note: To be used for writing test cases only
-func SetKubeInterface(i kubernetes.Interface) {
-	kubeClient = i
+func (c *Client) SetKubeInterface(i kubernetes.Interface) {
+	if !fakeMode {
+		return
+	}
+	c.KubeClient = i
 }
 
 // SetDiscoveryInterface sets the fake discovery interface
 // Note: To be used for writing test cases only
-func SetDiscoveryInterface(groupsAndMethodsFn fakeServerGroupsAndResourcesMethod, serverVersionInfo *version.Info) {
-	discoveryClient = &FakeDiscovery{
-		FakeDiscovery:                      discoveryfake.FakeDiscovery{Fake: &kubeClient.(*kubernetesfake.Clientset).Fake},
+func (c *Client) SetDiscoveryInterface(groupsAndMethodsFn fakeServerGroupsAndResourcesMethod, serverVersionInfo *version.Info) {
+	if !fakeMode {
+		return
+	}
+	c.DiscoveryClient = &FakeDiscovery{
+		FakeDiscovery:                      discoveryfake.FakeDiscovery{Fake: &c.KubeClient.(*kubernetesfake.Clientset).Fake},
 		fakeServerGroupsAndResourcesMethod: groupsAndMethodsFn,
 		versionInfo:                        serverVersionInfo,
 	}
