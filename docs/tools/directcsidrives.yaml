@@ -1,0 +1,582 @@
+apiVersion: v1
+items:
+- apiVersion: direct.csi.min.io/v1beta3
+  kind: DirectCSIDrive
+  metadata:
+    creationTimestamp: "2024-01-31T17:29:00Z"
+    generation: 3
+    labels:
+      direct.csi.min.io/access-tier: Unknown
+      direct.csi.min.io/created-by: directcsi-driver
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/path: nvme0n1
+      direct.csi.min.io/version: v1beta3
+    name: 49f194a0-a0ea-4389-ba9e-510e5873d77b
+    resourceVersion: "377687"
+    uid: caafc0c4-56ba-4fb3-818a-0065f562bfcb
+  spec:
+    directCSIOwned: false
+  status:
+    accessTier: Unknown
+    allocatedCapacity: 256060514304
+    conditions:
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: ""
+      reason: NotAdded
+      status: "False"
+      type: Owned
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: ""
+      reason: NotAdded
+      status: "False"
+      type: Mounted
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: xfs
+      reason: NotAdded
+      status: "False"
+      type: Formatted
+    - lastTransitionTime: "2024-01-31T17:30:21Z"
+      message: ""
+      reason: Initialized
+      status: "True"
+      type: Initialized
+    driveStatus: Unavailable
+    majorNumber: 259
+    modelNumber: LENSE20256GMSP34MEAT2TA
+    nodeName: praveen-thinkpad-x1-carbon-6th
+    partTableType: gpt
+    partTableUUID: baed7fdf-2948-4523-b91b-0dd1d55c8a9d
+    partitioned: true
+    path: /dev/nvme0n1
+    rootPartition: nvme0n1
+    topology:
+      direct.csi.min.io/identity: direct-csi-min-io
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/rack: default
+      direct.csi.min.io/region: default
+      direct.csi.min.io/zone: default
+    totalCapacity: 256060514304
+    ueventSerial: FBFB18060MY0001903
+    wwid: eui.a03299af790f1001
+- apiVersion: direct.csi.min.io/v1beta3
+  kind: DirectCSIDrive
+  metadata:
+    creationTimestamp: "2024-01-31T17:30:21Z"
+    finalizers:
+    - direct.csi.min.io/data-protection
+    generation: 4
+    labels:
+      direct.csi.min.io/access-tier: Unknown
+      direct.csi.min.io/created-by: directcsi-driver
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/path: dm-1
+      direct.csi.min.io/version: v1beta3
+    name: 5c0f63c5-e108-4eb4-a4ad-8a4da227b837
+    resourceVersion: "377686"
+    uid: 95708bf3-c833-4cc2-82e5-cc8e9d6c2530
+  spec:
+    directCSIOwned: true
+  status:
+    accessTier: Unknown
+    allocatedCapacity: 10616832
+    conditions:
+    - lastTransitionTime: "2024-01-31T17:30:32Z"
+      message: ""
+      reason: Added
+      status: "True"
+      type: Owned
+    - lastTransitionTime: "2024-01-31T17:30:32Z"
+      message: Mounted
+      reason: Added
+      status: "True"
+      type: Mounted
+    - lastTransitionTime: "2024-01-31T17:30:32Z"
+      message: Formatted
+      reason: Added
+      status: "True"
+      type: Formatted
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: ""
+      reason: Initialized
+      status: "True"
+      type: Initialized
+    dmName: vg0-lv--1
+    dmUUID: LVM-Ca4SoWAgBTHBAkOv5fXaFENkwF5e7dBBhS3gBnmmvRQdmPod6zkCokjodb4vMVcL
+    driveStatus: Ready
+    filesystem: xfs
+    filesystemUUID: e9626743-5adb-43b0-9371-656b31cdd67f
+    freeCapacity: 2032009216
+    majorNumber: 253
+    minorNumber: 1
+    mountOptions:
+    - relatime
+    - rw
+    mountpoint: /var/lib/direct-csi/mnt/e9626743-5adb-43b0-9371-656b31cdd67f
+    nodeName: praveen-thinkpad-x1-carbon-6th
+    path: /dev/dm-1
+    physicalBlockSize: 4096
+    rootPartition: dm-1
+    topology:
+      direct.csi.min.io/identity: direct-csi-min-io
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/rack: default
+      direct.csi.min.io/region: default
+      direct.csi.min.io/zone: default
+    totalCapacity: 2042626048
+    ueventFSUUID: e9626743-5adb-43b0-9371-656b31cdd67f
+- apiVersion: direct.csi.min.io/v1beta3
+  kind: DirectCSIDrive
+  metadata:
+    creationTimestamp: "2024-01-31T17:29:00Z"
+    generation: 3
+    labels:
+      direct.csi.min.io/access-tier: Unknown
+      direct.csi.min.io/created-by: directcsi-driver
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/path: nvme0n1p3
+      direct.csi.min.io/version: v1beta3
+    name: 66c6395c-7e42-4b8c-bb36-b54cc9d2a58c
+    resourceVersion: "377689"
+    uid: c7e631dc-abbb-4994-ad34-fd254fef0b36
+  spec:
+    directCSIOwned: false
+  status:
+    accessTier: Unknown
+    allocatedCapacity: 50060066816
+    conditions:
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: ""
+      reason: NotAdded
+      status: "False"
+      type: Owned
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: /
+      reason: NotAdded
+      status: "True"
+      type: Mounted
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: xfs
+      reason: NotAdded
+      status: "True"
+      type: Formatted
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: ""
+      reason: Initialized
+      status: "True"
+      type: Initialized
+    driveStatus: Unavailable
+    filesystem: ext4
+    majorNumber: 259
+    minorNumber: 3
+    modelNumber: LENSE20256GMSP34MEAT2TA
+    mountOptions:
+    - relatime
+    - rw
+    mountpoint: /
+    nodeName: praveen-thinkpad-x1-carbon-6th
+    partTableType: gpt
+    partTableUUID: baed7fdf-2948-4523-b91b-0dd1d55c8a9d
+    partitionNum: 3
+    partitionUUID: 3d444a87-35bf-4c11-9384-341e41641168
+    path: /dev/nvme0n1p3
+    rootPartition: nvme0n1p3
+    topology:
+      direct.csi.min.io/identity: direct-csi-min-io
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/rack: default
+      direct.csi.min.io/region: default
+      direct.csi.min.io/zone: default
+    totalCapacity: 50060066816
+    ueventFSUUID: 3f02f1e8-0f04-4e08-8d37-bd25aaec8f03
+    ueventSerial: FBFB18060MY0001903
+    wwid: eui.a03299af790f1001
+- apiVersion: direct.csi.min.io/v1beta3
+  kind: DirectCSIDrive
+  metadata:
+    creationTimestamp: "2024-01-31T17:29:00Z"
+    generation: 3
+    labels:
+      direct.csi.min.io/access-tier: Unknown
+      direct.csi.min.io/created-by: directcsi-driver
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/path: nvme0n1p2
+      direct.csi.min.io/version: v1beta3
+    name: 729e2f32-718d-416f-bbf2-52e11b498bb0
+    resourceVersion: "377690"
+    uid: 46e0816b-6de3-4f0c-81ca-cd1f2f7b8246
+  spec:
+    directCSIOwned: false
+  status:
+    accessTier: Unknown
+    allocatedCapacity: 205462081024
+    conditions:
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: ""
+      reason: NotAdded
+      status: "False"
+      type: Owned
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: /home
+      reason: NotAdded
+      status: "True"
+      type: Mounted
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: xfs
+      reason: NotAdded
+      status: "True"
+      type: Formatted
+    - lastTransitionTime: "2024-01-31T17:30:21Z"
+      message: ""
+      reason: Initialized
+      status: "True"
+      type: Initialized
+    driveStatus: Unavailable
+    filesystem: ext4
+    majorNumber: 259
+    minorNumber: 2
+    modelNumber: LENSE20256GMSP34MEAT2TA
+    mountOptions:
+    - relatime
+    - rw
+    mountpoint: /home
+    nodeName: praveen-thinkpad-x1-carbon-6th
+    partTableType: gpt
+    partTableUUID: baed7fdf-2948-4523-b91b-0dd1d55c8a9d
+    partitionNum: 2
+    partitionUUID: 6fa7b66d-4e3b-4c1d-b9b3-2fc5779f93a0
+    path: /dev/nvme0n1p2
+    rootPartition: nvme0n1p2
+    topology:
+      direct.csi.min.io/identity: direct-csi-min-io
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/rack: default
+      direct.csi.min.io/region: default
+      direct.csi.min.io/zone: default
+    totalCapacity: 205462081024
+    ueventFSUUID: a5eb531b-0d9d-4e6e-a766-c79ac18b7ea6
+    ueventSerial: FBFB18060MY0001903
+    wwid: eui.a03299af790f1001
+- apiVersion: direct.csi.min.io/v1beta3
+  kind: DirectCSIDrive
+  metadata:
+    creationTimestamp: "2024-01-31T17:29:00Z"
+    generation: 3
+    labels:
+      direct.csi.min.io/access-tier: Unknown
+      direct.csi.min.io/created-by: directcsi-driver
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/path: nvme0n1p1
+      direct.csi.min.io/version: v1beta3
+    name: 91392f5c-7b0e-4b22-a8b2-47d738ca8463
+    resourceVersion: "377688"
+    uid: 45abbc98-a559-4b9b-b1e3-9948d7ef4e83
+  spec:
+    directCSIOwned: false
+  status:
+    accessTier: Unknown
+    allocatedCapacity: 536870912
+    conditions:
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: ""
+      reason: NotAdded
+      status: "False"
+      type: Owned
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: /boot/efi
+      reason: NotAdded
+      status: "True"
+      type: Mounted
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: xfs
+      reason: NotAdded
+      status: "True"
+      type: Formatted
+    - lastTransitionTime: "2024-01-31T17:30:21Z"
+      message: ""
+      reason: Initialized
+      status: "True"
+      type: Initialized
+    driveStatus: Unavailable
+    filesystem: vfat
+    majorNumber: 259
+    minorNumber: 1
+    modelNumber: LENSE20256GMSP34MEAT2TA
+    mountOptions:
+    - relatime
+    - rw
+    mountpoint: /boot/efi
+    nodeName: praveen-thinkpad-x1-carbon-6th
+    partTableType: gpt
+    partTableUUID: baed7fdf-2948-4523-b91b-0dd1d55c8a9d
+    partitionNum: 1
+    partitionUUID: b2e53634-f23d-4a9b-adeb-ecf26196fd3e
+    path: /dev/nvme0n1p1
+    rootPartition: nvme0n1p1
+    topology:
+      direct.csi.min.io/identity: direct-csi-min-io
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/rack: default
+      direct.csi.min.io/region: default
+      direct.csi.min.io/zone: default
+    totalCapacity: 536870912
+    ueventFSUUID: A6D6-9ECF
+    ueventSerial: FBFB18060MY0001903
+    wwid: eui.a03299af790f1001
+- apiVersion: direct.csi.min.io/v1beta3
+  kind: DirectCSIDrive
+  metadata:
+    creationTimestamp: "2024-01-31T17:39:25Z"
+    generation: 1
+    labels:
+      direct.csi.min.io/access-tier: Unknown
+      direct.csi.min.io/created-by: directcsi-driver
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/path: sda
+      direct.csi.min.io/version: v1beta5
+    name: 99520096-9fa1-454d-af49-7d24eac63f80
+    resourceVersion: "377691"
+    uid: d69312f2-924c-47e8-8f75-2cad4e1ce477
+  spec:
+    directCSIOwned: false
+  status:
+    accessTier: Unknown
+    conditions:
+    - lastTransitionTime: "2024-01-31T17:39:25Z"
+      message: ""
+      reason: NotAdded
+      status: "False"
+      type: Owned
+    - lastTransitionTime: "2024-01-31T17:39:25Z"
+      message: ""
+      reason: NotAdded
+      status: "False"
+      type: Mounted
+    - lastTransitionTime: "2024-01-31T17:39:25Z"
+      message: xfs
+      reason: NotAdded
+      status: "False"
+      type: Formatted
+    - lastTransitionTime: "2024-01-31T17:39:25Z"
+      message: ""
+      reason: Initialized
+      status: "True"
+      type: Initialized
+    - lastTransitionTime: "2024-01-31T17:39:25Z"
+      message: ""
+      reason: Ready
+      status: "True"
+      type: Ready
+    driveStatus: Unavailable
+    majorNumber: 8
+    modelNumber: SD_MMC_CRW
+    nodeName: praveen-thinkpad-x1-carbon-6th
+    path: /dev/sda
+    rootPartition: sda
+    topology:
+      direct.csi.min.io/identity: direct-csi-min-io
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/rack: default
+      direct.csi.min.io/region: default
+      direct.csi.min.io/zone: default
+    ueventSerial: "28203008282014000"
+    vendor: Generic-
+- apiVersion: direct.csi.min.io/v1beta3
+  kind: DirectCSIDrive
+  metadata:
+    creationTimestamp: "2024-01-31T17:30:21Z"
+    finalizers:
+    - direct.csi.min.io/data-protection
+    generation: 4
+    labels:
+      direct.csi.min.io/access-tier: Unknown
+      direct.csi.min.io/created-by: directcsi-driver
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/path: dm-0
+      direct.csi.min.io/version: v1beta3
+    name: 9d310a88-13e5-4aa9-bf2c-13099529a32f
+    resourceVersion: "377683"
+    uid: 84b257c3-e58f-4280-aa3d-5e2d69259558
+  spec:
+    directCSIOwned: true
+  status:
+    accessTier: Unknown
+    allocatedCapacity: 10616832
+    conditions:
+    - lastTransitionTime: "2024-01-31T17:30:32Z"
+      message: ""
+      reason: Added
+      status: "True"
+      type: Owned
+    - lastTransitionTime: "2024-01-31T17:30:32Z"
+      message: Mounted
+      reason: Added
+      status: "True"
+      type: Mounted
+    - lastTransitionTime: "2024-01-31T17:30:32Z"
+      message: Formatted
+      reason: Added
+      status: "True"
+      type: Formatted
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: ""
+      reason: Initialized
+      status: "True"
+      type: Initialized
+    dmName: vg0-lv--0
+    dmUUID: LVM-Ca4SoWAgBTHBAkOv5fXaFENkwF5e7dBBgSLwdAefhqetbnAx1u0cPe2ZlM7GH0CC
+    driveStatus: Ready
+    filesystem: xfs
+    filesystemUUID: cd9d7a6f-7cb6-47b5-8e7d-2b884489fb10
+    freeCapacity: 2032009216
+    majorNumber: 253
+    mountOptions:
+    - relatime
+    - rw
+    mountpoint: /var/lib/direct-csi/mnt/cd9d7a6f-7cb6-47b5-8e7d-2b884489fb10
+    nodeName: praveen-thinkpad-x1-carbon-6th
+    path: /dev/dm-0
+    physicalBlockSize: 4096
+    rootPartition: dm-0
+    topology:
+      direct.csi.min.io/identity: direct-csi-min-io
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/rack: default
+      direct.csi.min.io/region: default
+      direct.csi.min.io/zone: default
+    totalCapacity: 2042626048
+    ueventFSUUID: cd9d7a6f-7cb6-47b5-8e7d-2b884489fb10
+- apiVersion: direct.csi.min.io/v1beta3
+  kind: DirectCSIDrive
+  metadata:
+    creationTimestamp: "2024-01-31T17:30:21Z"
+    finalizers:
+    - direct.csi.min.io/data-protection
+    generation: 4
+    labels:
+      direct.csi.min.io/access-tier: Unknown
+      direct.csi.min.io/created-by: directcsi-driver
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/path: dm-3
+      direct.csi.min.io/version: v1beta3
+    name: a0b473d4-1e80-4dac-be78-f713c609cd7c
+    resourceVersion: "377684"
+    uid: 5e5d1a21-5f03-4eb8-8010-742231e42932
+  spec:
+    directCSIOwned: true
+  status:
+    accessTier: Unknown
+    allocatedCapacity: 10616832
+    conditions:
+    - lastTransitionTime: "2024-01-31T17:30:32Z"
+      message: ""
+      reason: Added
+      status: "True"
+      type: Owned
+    - lastTransitionTime: "2024-01-31T17:30:32Z"
+      message: Mounted
+      reason: Added
+      status: "True"
+      type: Mounted
+    - lastTransitionTime: "2024-01-31T17:30:32Z"
+      message: Formatted
+      reason: Added
+      status: "True"
+      type: Formatted
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: ""
+      reason: Initialized
+      status: "True"
+      type: Initialized
+    dmName: vg0-lv--3
+    dmUUID: LVM-Ca4SoWAgBTHBAkOv5fXaFENkwF5e7dBBrXVRZyXuSJGnKWTzM27SfIr490vnfSgX
+    driveStatus: Ready
+    filesystem: xfs
+    filesystemUUID: 4a665f0a-1932-4a3c-8226-710e14eb5efb
+    freeCapacity: 2032009216
+    majorNumber: 253
+    minorNumber: 3
+    mountOptions:
+    - relatime
+    - rw
+    mountpoint: /var/lib/direct-csi/mnt/4a665f0a-1932-4a3c-8226-710e14eb5efb
+    nodeName: praveen-thinkpad-x1-carbon-6th
+    path: /dev/dm-3
+    physicalBlockSize: 4096
+    rootPartition: dm-3
+    topology:
+      direct.csi.min.io/identity: direct-csi-min-io
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/rack: default
+      direct.csi.min.io/region: default
+      direct.csi.min.io/zone: default
+    totalCapacity: 2042626048
+    ueventFSUUID: 4a665f0a-1932-4a3c-8226-710e14eb5efb
+- apiVersion: direct.csi.min.io/v1beta3
+  kind: DirectCSIDrive
+  metadata:
+    creationTimestamp: "2024-01-31T17:30:21Z"
+    finalizers:
+    - direct.csi.min.io/data-protection
+    generation: 4
+    labels:
+      direct.csi.min.io/access-tier: Unknown
+      direct.csi.min.io/created-by: directcsi-driver
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/path: dm-2
+      direct.csi.min.io/version: v1beta3
+    name: aa7517d3-e3d3-4b2a-a384-77618d603843
+    resourceVersion: "377685"
+    uid: ba5a8746-b89b-4848-a2ed-2645db4281cc
+  spec:
+    directCSIOwned: true
+  status:
+    accessTier: Unknown
+    allocatedCapacity: 10616832
+    conditions:
+    - lastTransitionTime: "2024-01-31T17:30:32Z"
+      message: ""
+      reason: Added
+      status: "True"
+      type: Owned
+    - lastTransitionTime: "2024-01-31T17:30:32Z"
+      message: Mounted
+      reason: Added
+      status: "True"
+      type: Mounted
+    - lastTransitionTime: "2024-01-31T17:30:32Z"
+      message: Formatted
+      reason: Added
+      status: "True"
+      type: Formatted
+    - lastTransitionTime: "2024-01-31T17:30:20Z"
+      message: ""
+      reason: Initialized
+      status: "True"
+      type: Initialized
+    dmName: vg0-lv--2
+    dmUUID: LVM-Ca4SoWAgBTHBAkOv5fXaFENkwF5e7dBBU6ufTH92s90Xf7P5KfBySXEpFkfjvale
+    driveStatus: Ready
+    filesystem: xfs
+    filesystemUUID: cd3bd1a7-a83a-4882-97c5-18b2df9b2da7
+    freeCapacity: 2032009216
+    majorNumber: 253
+    minorNumber: 2
+    mountOptions:
+    - relatime
+    - rw
+    mountpoint: /var/lib/direct-csi/mnt/cd3bd1a7-a83a-4882-97c5-18b2df9b2da7
+    nodeName: praveen-thinkpad-x1-carbon-6th
+    path: /dev/dm-2
+    physicalBlockSize: 4096
+    rootPartition: dm-2
+    topology:
+      direct.csi.min.io/identity: direct-csi-min-io
+      direct.csi.min.io/node: praveen-thinkpad-x1-carbon-6th
+      direct.csi.min.io/rack: default
+      direct.csi.min.io/region: default
+      direct.csi.min.io/zone: default
+    totalCapacity: 2042626048
+    ueventFSUUID: cd3bd1a7-a83a-4882-97c5-18b2df9b2da7
+kind: List
+metadata:
+  resourceVersion: ""

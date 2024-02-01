@@ -21,6 +21,7 @@ import (
 	"errors"
 	"os"
 
+	"github.com/minio/directpv/pkg/client"
 	"github.com/minio/directpv/pkg/consts"
 	"github.com/minio/directpv/pkg/initrequest"
 	"github.com/minio/directpv/pkg/node"
@@ -51,8 +52,13 @@ func startNodeController(ctx context.Context) error {
 
 	errCh := make(chan error)
 
+	client, err := client.NewClient()
+	if err != nil {
+		return err
+	}
+
 	go func() {
-		node.StartController(ctx, nodeID)
+		node.StartController(ctx, nodeID, client)
 		errCh <- errors.New("node controller stopped")
 	}()
 
@@ -64,6 +70,7 @@ func startNodeController(ctx context.Context) error {
 			rack,
 			zone,
 			region,
+			client,
 		)
 		errCh <- errors.New("initrequest controller stopped")
 	}()

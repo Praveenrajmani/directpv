@@ -20,7 +20,6 @@ import (
 	"context"
 
 	directpvtypes "github.com/minio/directpv/pkg/apis/directpv.min.io/types"
-	"github.com/minio/directpv/pkg/client"
 	"github.com/minio/directpv/pkg/device"
 	"github.com/minio/directpv/pkg/types"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -28,26 +27,30 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
-func probeDevices(nodeID directpvtypes.NodeID) ([]types.Device, error) {
+func (handler *nodeEventHandler) probeDevices(ctx context.Context, nodeID directpvtypes.NodeID) ([]types.Device, error) {
 	devices, err := device.Probe()
 	if err != nil {
 		return nil, err
 	}
 	var nodeDevices []types.Device
+	findDriveByFSUUID := func(fsuuid string) error {
+		_, err := handler.client.DriveClient.Get(ctx, fsuuid, metav1.GetOptions{})
+		return err
+	}
 	for i := range devices {
-		nodeDevices = append(nodeDevices, devices[i].ToNodeDevice(nodeID))
+		nodeDevices = append(nodeDevices, devices[i].ToNodeDevice(nodeID, findDriveByFSUUID))
 	}
 	return nodeDevices, nil
 }
 
 // Sync probes the local devices and syncs the DirectPVNode CRD objects with the probed information.
-func Sync(ctx context.Context, nodeID directpvtypes.NodeID) error {
-	devices, err := probeDevices(nodeID)
+func (handler *nodeEventHandler) Sync(ctx context.Context, nodeID directpvtypes.NodeID) error {
+	devices, err := handler.probeDevices(ctx, nodeID)
 	if err != nil {
 		return err
 	}
 	updateFunc := func() error {
-		nodeClient := client.NodeClient()
+		nodeClient := handler.client.NodeClient
 		node, err := nodeClient.Get(ctx, string(nodeID), metav1.GetOptions{})
 		if err != nil {
 			if !apierrors.IsNotFound(err) {

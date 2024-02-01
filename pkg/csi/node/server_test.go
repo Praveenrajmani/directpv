@@ -27,17 +27,25 @@ import (
 	"github.com/minio/directpv/pkg/xfs"
 )
 
+func init() {
+	client.SetFakeMode()
+}
+
 func TestNodeExpandVolume(t *testing.T) {
 	volumeID := "volume-id-1"
 	volume := types.NewVolume(volumeID, "fsuuid1", "node-1", "drive-1", "sda", 100*MiB)
 	volume.Status.DataPath = "volume/id/1/data/path"
 	volume.Status.StagingTargetPath = "volume/id/1/staging/target/path"
 
-	clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(volume))
-	client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
-	client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+	nodeServer, err := createFakeServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
 
-	nodeServer := createFakeServer()
+	clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(volume))
+	nodeServer.client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+	nodeServer.client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+
 	nodeServer.getDeviceByFSUUID = func(fsuuid string) (string, error) {
 		return "sda", nil
 	}

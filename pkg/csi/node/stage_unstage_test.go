@@ -33,6 +33,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+func init() {
+	client.SetFakeMode()
+}
+
 const MiB = 1024 * 1024
 
 func TestNodeStageVolume(t *testing.T) {
@@ -71,11 +75,15 @@ func TestNodeStageVolume(t *testing.T) {
 			100*MiB,
 		)
 
-		clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(volume, testCase.drive))
-		client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
-		client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+		nodeServer, err := createFakeServer()
+		if err != nil {
+			t.Fatalf("unable to create fake server; %v", err)
+		}
 
-		nodeServer := createFakeServer()
+		clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(volume, testCase.drive))
+		nodeServer.client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+		nodeServer.client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+
 		nodeServer.getMounts = func() (map[string]utils.StringSet, map[string]utils.StringSet, error) {
 			return testCase.mountInfo, testCase.mountInfo, nil
 		}
@@ -140,24 +148,29 @@ func TestStageUnstageVolume(t *testing.T) {
 		StagingTargetPath: "/path/to/target",
 	}
 
+	ns, err := createFakeServer()
+	if err != nil {
+		t.Fatalf("unable to create server; %v", err)
+	}
+
 	clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(testObjects...))
-	client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
-	client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+	ns.client.SetDriveInterface(clientset.DirectpvLatest().DirectPVDrives())
+	ns.client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
 
 	ctx := context.TODO()
-	ns := createFakeServer()
+
 	dataPath := path.Join(consts.MountRootDir, testDriveName, ".FSUUID."+testDriveName, testVolumeName50MB)
 	ns.getMounts = func() (map[string]utils.StringSet, map[string]utils.StringSet, error) {
 		return map[string]utils.StringSet{consts.MountRootDir: nil}, map[string]utils.StringSet{consts.MountRootDir: nil}, nil
 	}
 
 	// Stage Volume test
-	_, err := ns.NodeStageVolume(ctx, &stageVolumeRequest)
+	_, err = ns.NodeStageVolume(ctx, &stageVolumeRequest)
 	if err != nil {
 		t.Fatalf("[%s] StageVolume failed. Error: %v", stageVolumeRequest.VolumeId, err)
 	}
 
-	volObj, gErr := client.VolumeClient().Get(ctx, stageVolumeRequest.GetVolumeId(), metav1.GetOptions{
+	volObj, gErr := ns.client.VolumeClient.Get(ctx, stageVolumeRequest.GetVolumeId(), metav1.GetOptions{
 		TypeMeta: types.NewVolumeTypeMeta(),
 	})
 	if gErr != nil {
@@ -177,7 +190,7 @@ func TestStageUnstageVolume(t *testing.T) {
 		t.Fatalf("[%s] UnstageVolume failed. Error: %v", unstageVolumeRequest.VolumeId, err)
 	}
 
-	volObj, gErr = client.VolumeClient().Get(ctx, unstageVolumeRequest.GetVolumeId(), metav1.GetOptions{
+	volObj, gErr = ns.client.VolumeClient.Get(ctx, unstageVolumeRequest.GetVolumeId(), metav1.GetOptions{
 		TypeMeta: types.NewVolumeTypeMeta(),
 	})
 	if gErr != nil {

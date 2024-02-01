@@ -38,18 +38,20 @@ const (
 
 type nodeEventHandler struct {
 	nodeID directpvtypes.NodeID
+	client *client.Client
 }
 
-func newNodeEventHandler(nodeID directpvtypes.NodeID) *nodeEventHandler {
+func newNodeEventHandler(nodeID directpvtypes.NodeID, client *client.Client) *nodeEventHandler {
 	return &nodeEventHandler{
 		nodeID: nodeID,
+		client: client,
 	}
 }
 
 func (handler *nodeEventHandler) ListerWatcher() cache.ListerWatcher {
 	labelSelector := fmt.Sprintf("%s=%s", directpvtypes.NodeLabelKey, handler.nodeID)
 	return cache.NewFilteredListWatchFromClient(
-		client.RESTClient(),
+		handler.client.RESTClient,
 		consts.NodeResource,
 		"",
 		func(options *metav1.ListOptions) {
@@ -67,7 +69,7 @@ func (handler *nodeEventHandler) Handle(ctx context.Context, eventType controlle
 	case controller.UpdateEvent:
 		node := object.(*types.Node)
 		if node.Spec.Refresh {
-			return Sync(ctx, directpvtypes.NodeID(node.Name))
+			return handler.Sync(ctx, directpvtypes.NodeID(node.Name))
 		}
 	default:
 	}
@@ -75,7 +77,7 @@ func (handler *nodeEventHandler) Handle(ctx context.Context, eventType controlle
 }
 
 // StartController starts node controller.
-func StartController(ctx context.Context, nodeID directpvtypes.NodeID) {
-	ctrl := controller.New("node", newNodeEventHandler(nodeID), workerThreads, resyncPeriod)
+func StartController(ctx context.Context, nodeID directpvtypes.NodeID, client *client.Client) {
+	ctrl := controller.New("node", newNodeEventHandler(nodeID, client), workerThreads, resyncPeriod)
 	ctrl.Run(ctx)
 }

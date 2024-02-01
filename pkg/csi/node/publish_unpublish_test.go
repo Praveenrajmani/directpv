@@ -115,22 +115,26 @@ func TestPublishUnpublishVolume(t *testing.T) {
 		TargetPath: testTargetPath,
 	}
 
+	ns, err := createFakeServer()
+	if err != nil {
+		t.Fatalf("unable to create fake server; %v", err)
+	}
+
 	clientset := types.NewExtFakeClientset(clientsetfake.NewSimpleClientset(testVol))
-	client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
+	ns.client.SetVolumeInterface(clientset.DirectpvLatest().DirectPVVolumes())
 
 	ctx := context.TODO()
-	ns := createFakeServer()
 
 	// Publish volume test
 	ns.getMounts = func() (map[string]utils.StringSet, map[string]utils.StringSet, error) {
 		return map[string]utils.StringSet{testStagingPath: nil}, map[string]utils.StringSet{testStagingPath: nil}, nil
 	}
-	_, err := ns.NodePublishVolume(ctx, &publishVolumeRequest)
+	_, err = ns.NodePublishVolume(ctx, &publishVolumeRequest)
 	if err != nil {
 		t.Fatalf("[%s] PublishVolume failed. Error: %v", publishVolumeRequest.VolumeId, err)
 	}
 
-	volObj, gErr := client.VolumeClient().Get(ctx, publishVolumeRequest.GetVolumeId(), metav1.GetOptions{
+	volObj, gErr := ns.client.VolumeClient.Get(ctx, publishVolumeRequest.GetVolumeId(), metav1.GetOptions{
 		TypeMeta: types.NewVolumeTypeMeta(),
 	})
 	if gErr != nil {
@@ -147,7 +151,7 @@ func TestPublishUnpublishVolume(t *testing.T) {
 		t.Fatalf("[%s] PublishVolume failed. Error: %v", unpublishVolumeRequest.VolumeId, err)
 	}
 
-	volObj, gErr = client.VolumeClient().Get(ctx, unpublishVolumeRequest.GetVolumeId(), metav1.GetOptions{
+	volObj, gErr = ns.client.VolumeClient.Get(ctx, unpublishVolumeRequest.GetVolumeId(), metav1.GetOptions{
 		TypeMeta: types.NewVolumeTypeMeta(),
 	})
 	if gErr != nil {

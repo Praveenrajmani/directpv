@@ -58,5 +58,5 @@ func createFakeServer() (*Server, error) {
 			return nil
 		},
 		client: client,
-	}
+	}, nil
 }

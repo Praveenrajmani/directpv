@@ -22,10 +22,10 @@ import (
 	"os"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/minio/directpv/pkg/client"
 	"github.com/minio/directpv/pkg/consts"
 	pkgidentity "github.com/minio/directpv/pkg/csi/identity"
 	"github.com/minio/directpv/pkg/csi/node"
-	"github.com/minio/directpv/pkg/device"
 	"github.com/minio/directpv/pkg/drive"
 	"github.com/minio/directpv/pkg/sys"
 	"github.com/minio/directpv/pkg/volume"
@@ -47,7 +47,11 @@ var nodeServerCmd = &cobra.Command{
 		if err := mountTempDir(); err != nil {
 			klog.ErrorS(err, "unable to make tmpfs mount", "Target", consts.TmpMountDir)
 		}
-		if err := device.Sync(c.Context(), nodeID); err != nil {
+		client, err := client.NewClient()
+		if err != nil {
+			return err
+		}
+		if err := client.SyncDevices(c.Context(), nodeID); err != nil {
 			return err
 		}
 		return startNodeServer(c.Context())

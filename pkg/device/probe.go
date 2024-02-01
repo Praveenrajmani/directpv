@@ -17,22 +17,32 @@
 package device
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
 	directpvtypes "github.com/minio/directpv/pkg/apis/directpv.min.io/types"
-	"github.com/minio/directpv/pkg/client"
 	"github.com/minio/directpv/pkg/consts"
 	"github.com/minio/directpv/pkg/types"
+	"github.com/minio/directpv/pkg/utils"
+	"github.com/minio/directpv/pkg/xfs"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 )
 
 const minSupportedDeviceSize = 512 * 1024 * 1024 // 512 MiB
+
+// ProbedDevice represents the device probed.
+type ProbedDevice struct {
+	Device
+	FSUUID        string
+	Label         string
+	TotalCapacity int64
+	FreeCapacity  int64
+}
 
 // Device is a block device information.
 type Device struct {
@@ -112,7 +122,7 @@ func (d Device) FSUUID() string {
 }
 
 // deniedReason returns the reason if the device is denied for initialization.
-func (d Device) deniedReason() string {
+func (d Device) deniedReason(findDriveByFSUUID func(string) error) string {
 	var reasons []string
 
 	if d.Size < minSupportedDeviceSize {
@@ -148,7 +158,7 @@ func (d Device) deniedReason() string {
 	}
 
 	if d.FSType() == "xfs" && d.FSUUID() != "" {
-		if _, err := client.DriveClient().Get(context.Background(), d.FSUUID(), metav1.GetOptions{}); err != nil {
+		if err := findDriveByFSUUID(d.FSUUID()); err != nil {
 			if !apierrors.IsNotFound(err) {
 				reasons = append(reasons, "internal error; "+err.Error())
 			}
@@ -166,7 +176,7 @@ func (d Device) deniedReason() string {
 }
 
 // ToNodeDevice constructs the NodeDevice object from Device info.
-func (d Device) ToNodeDevice(nodeID directpvtypes.NodeID) types.Device {
+func (d Device) ToNodeDevice(nodeID directpvtypes.NodeID, findDriveByFSUUID func(string) error) types.Device {
 	return types.Device{
 		Name:         d.Name,
 		ID:           d.ID(nodeID),
@@ -175,7 +185,7 @@ func (d Device) ToNodeDevice(nodeID directpvtypes.NodeID) types.Device {
 		Make:         d.Make(),
 		FSType:       d.FSType(),
 		FSUUID:       d.FSUUID(),
-		DeniedReason: d.deniedReason(),
+		DeniedReason: d.deniedReason(findDriveByFSUUID),
 	}
 }
 
@@ -187,4 +197,37 @@ func Probe() ([]Device, error) {
 // ProbeDevices returns block devices from udev.
 func ProbeDevices(majorMinor ...string) ([]Device, error) {
 	return probeDevices(majorMinor...)
+}
+
+// ProbeDeviceMap probes and returns block devices.
+func ProbeDeviceMap() (map[string][]ProbedDevice, error) {
+	devices, err := Probe()
+	if err != nil {
+		return nil, err
+	}
+
+	deviceMap := map[string][]ProbedDevice{}
+	for _, dev := range devices {
+		if dev.Hidden || dev.Partitioned || len(dev.Holders) != 0 || dev.SwapOn || dev.CDROM || dev.Size == 0 {
+			continue
+		}
+
+		fsuuid, label, totalCapacity, freeCapacity, err := xfs.Probe(utils.AddDevPrefix(dev.Name))
+		if err != nil {
+			if !errors.Is(err, xfs.ErrFSNotFound) {
+				klog.ErrorS(err, "unable to probe XFS filesystem", "Device", dev.Name)
+			}
+			continue
+		}
+
+		deviceMap[fsuuid] = append(deviceMap[fsuuid], ProbedDevice{
+			Device:        dev,
+			FSUUID:        fsuuid,
+			Label:         label,
+			TotalCapacity: int64(totalCapacity),
+			FreeCapacity:  int64(freeCapacity),
+		})
+	}
+
+	return deviceMap, nil
 }
