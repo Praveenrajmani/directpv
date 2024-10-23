@@ -46,7 +46,7 @@ const (
 	resyncPeriod  = 5 * time.Minute
 )
 
-type initRequestEventHandler struct {
+type InitRequestHandler struct {
 	nodeID   directpvtypes.NodeID
 	reflink  bool
 	topology map[string]string
@@ -64,7 +64,7 @@ type initRequestEventHandler struct {
 	mu sync.Mutex
 }
 
-func newInitRequestEventHandler(ctx context.Context, nodeID directpvtypes.NodeID, topology map[string]string) (*initRequestEventHandler, error) {
+func NewHandler(ctx context.Context, nodeID directpvtypes.NodeID, topology map[string]string) (*InitRequestHandler, error) {
 	reflink, err := reflinkSupported(ctx)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func newInitRequestEventHandler(ctx context.Context, nodeID directpvtypes.NodeID
 		klog.V(3).Infof("XFS reflink support is disabled")
 	}
 
-	return &initRequestEventHandler{
+	return &InitRequestHandler{
 		reflink:  reflink,
 		nodeID:   nodeID,
 		topology: topology,
@@ -129,7 +129,7 @@ func newInitRequestEventHandler(ctx context.Context, nodeID directpvtypes.NodeID
 	}, nil
 }
 
-func (handler *initRequestEventHandler) ListerWatcher() cache.ListerWatcher {
+func (handler *InitRequestHandler) ListerWatcher() cache.ListerWatcher {
 	labelSelector := fmt.Sprintf("%s=%s", directpvtypes.NodeLabelKey, handler.nodeID)
 	return cache.NewFilteredListWatchFromClient(
 		client.RESTClient(),
@@ -141,11 +141,11 @@ func (handler *initRequestEventHandler) ListerWatcher() cache.ListerWatcher {
 	)
 }
 
-func (handler *initRequestEventHandler) ObjectType() runtime.Object {
+func (handler *InitRequestHandler) ObjectType() runtime.Object {
 	return &types.InitRequest{}
 }
 
-func (handler *initRequestEventHandler) Handle(ctx context.Context, eventType controller.EventType, object runtime.Object) error {
+func (handler *InitRequestHandler) Handle(ctx context.Context, eventType controller.EventType, object runtime.Object) error {
 	switch eventType {
 	case controller.UpdateEvent, controller.AddEvent:
 		initRequest := object.(*types.InitRequest)
@@ -157,7 +157,7 @@ func (handler *initRequestEventHandler) Handle(ctx context.Context, eventType co
 	return nil
 }
 
-func (handler *initRequestEventHandler) initDevices(ctx context.Context, req *types.InitRequest) error {
+func (handler *InitRequestHandler) initDevices(ctx context.Context, req *types.InitRequest) error {
 	handler.mu.Lock()
 	defer handler.mu.Unlock()
 
@@ -196,7 +196,7 @@ func (handler *initRequestEventHandler) initDevices(ctx context.Context, req *ty
 			wg.Add(1)
 			go func(i int, device pkgdevice.Device, force bool) {
 				defer wg.Done()
-				if err := handler.initDevice(device, force); err != nil {
+				if err := handler.InitDevice(device, force); err != nil {
 					results[i].Error = err.Error()
 				}
 			}(i, device, req.Spec.Devices[i].Force)
@@ -223,7 +223,7 @@ func updateInitRequest(ctx context.Context, name string, results []types.InitDev
 	return retry.RetryOnConflict(retry.DefaultRetry, updateFunc)
 }
 
-func (handler *initRequestEventHandler) initDevice(device pkgdevice.Device, force bool) error {
+func (handler *InitRequestHandler) InitDevice(device pkgdevice.Device, force bool) error {
 	devPath := utils.AddDevPrefix(device.Name)
 
 	deviceMap, majorMinorMap, err := handler.getMounts()
@@ -295,7 +295,7 @@ func (handler *initRequestEventHandler) initDevice(device pkgdevice.Device, forc
 
 // StartController starts initrequest controller.
 func StartController(ctx context.Context, nodeID directpvtypes.NodeID, identity, rack, zone, region string) {
-	initRequestHandler, err := newInitRequestEventHandler(
+	initRequestHandler, err := NewHandler(
 		ctx,
 		nodeID,
 		map[string]string{
